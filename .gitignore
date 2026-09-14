@@ -1,0 +1,25 @@
+# Java and Maven build outputs
+target/
+*.class
+
+# IDE settings
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Logs and runtime files
+*.log
+logs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Microsoft Office temporary files
+~$*
+
+# Local document review artifacts
+.codex-docx-review/
