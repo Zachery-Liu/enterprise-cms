@@ -1,6 +1,8 @@
 -- enterprise-cms A module schema
 -- Target: MySQL 8.0
 -- Dependency: B module must create sys_user(id BIGINT UNSIGNED) first.
+-- Fresh-database installation only; an existing installation needs a reviewed incremental migration.
+-- CategoryService must prevent self-parenting and cycles inside its category-write transaction.
 
 SET NAMES utf8mb4;
 
@@ -12,6 +14,10 @@ CREATE TABLE cms_category (
     status VARCHAR(16) NOT NULL DEFAULT 'ENABLED' COMMENT 'ENABLED or DISABLED',
     version INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Optimistic lock version',
     deleted TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Logical delete: 0 active, 1 deleted',
+    active_parent_key BIGINT UNSIGNED GENERATED ALWAYS AS
+        (CASE WHEN deleted = 0 THEN COALESCE(parent_id, 0) ELSE NULL END),
+    active_name VARCHAR(64) GENERATED ALWAYS AS
+        (CASE WHEN deleted = 0 THEN name ELSE NULL END),
     created_by BIGINT UNSIGNED NOT NULL COMMENT 'Creator user id',
     created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Creation time',
     updated_by BIGINT UNSIGNED NOT NULL COMMENT 'Last updater user id',
@@ -24,10 +30,10 @@ CREATE TABLE cms_category (
         REFERENCES sys_user (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_category_updated_by FOREIGN KEY (updated_by)
         REFERENCES sys_user (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
-    CONSTRAINT chk_category_not_self_parent CHECK (parent_id IS NULL OR parent_id <> id),
     CONSTRAINT chk_category_name_not_blank CHECK (CHAR_LENGTH(TRIM(name)) > 0),
     CONSTRAINT chk_category_status CHECK (status IN ('ENABLED', 'DISABLED')),
     CONSTRAINT chk_category_deleted CHECK (deleted IN (0, 1)),
+    CONSTRAINT uq_category_active_sibling UNIQUE (active_parent_key, active_name),
     INDEX idx_category_parent_tree (parent_id, deleted, status, sort_order, id),
     INDEX idx_category_sibling_name (parent_id, name, deleted),
     INDEX idx_category_status (status, deleted, id)
