@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: ${CMS_DB_URL:jdbc:mysql://127.0.0.1:3306/enterprise_cms?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${CMS_DB_USER:cms_app}
+    password: ${CMS_DB_PASSWORD:}
+  jackson:
+    time-zone: UTC
+mybatis-plus:
+  mapper-locations: classpath*:mapper/identity/*.xml
+  configuration:
+    map-underscore-to-camel-case: true

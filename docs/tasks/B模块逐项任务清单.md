@@ -143,15 +143,17 @@ B-05、B-06 和 B-07 可在数据库设计后并行准备；B-15 至 B-17 可在
 
 **工作内容：**
 
-- [ ] 创建用户、角色、权限、关联关系和日志 Entity。
-- [ ] 配置 MyBatis-Plus 主键、逻辑删除和自动填充。
-- [ ] 创建对应 Mapper 和必要 XML。
-- [ ] Entity 不直接作为 Controller 请求或响应对象。
-- [ ] 增加最小 Mapper 测试，验证表字段映射。
+- [x] 创建用户、角色、权限、关联关系和日志 Entity。
+- [x] 配置 MyBatis-Plus 主键、逻辑删除和自动填充。
+- [x] 创建对应 Mapper 和必要 XML。
+- [x] Entity 不直接作为 Controller 请求或响应对象。
+- [x] 增加最小 Mapper 测试，验证表字段映射。
 
 **产物：** Entity、Mapper、XML 和持久层测试。
 
 **验收：** 基础增查改和逻辑删除映射正确，密码摘要不会因通用序列化直接输出。
+
+**状态：** 已完成（2026-09-21）。验证结果见[B-04 持久层验证记录](../verification/B04持久层验证记录.md)。
 
 **建议提交：** `feat(identity): add persistence layer`
 
