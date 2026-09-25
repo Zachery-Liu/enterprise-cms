@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zachery.cms.modules.content.article.mapper.ArticleMapper">
+    <select id="selectForUpdate" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE id=#{id} AND deleted=0 FOR UPDATE
+    </select>
+    <update id="updateContent">
+        UPDATE cms_article SET title=#{row.title}, summary=#{row.summary,jdbcType=VARCHAR}, content=#{row.content},
+            category_id=#{row.categoryId}, version=version+1, updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND version=#{row.version} AND status=#{row.status}
+          AND status IN ('DRAFT','REJECTED') AND deleted=0
+    </update>
+    <update id="markDeleted">
+        UPDATE cms_article SET deleted=1, version=version+1, updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND version=#{row.version} AND status=#{row.status}
+          AND status IN ('DRAFT','REJECTED','OFFLINE') AND deleted=0
+    </update>
+    <update id="updateLifecycle">
+        UPDATE cms_article SET status=#{row.status}, review_comment=#{row.reviewComment,jdbcType=VARCHAR},
+            reviewer_id=#{row.reviewerId,jdbcType=BIGINT}, reviewed_at=#{row.reviewedAt,jdbcType=TIMESTAMP},
+            published_at=#{row.publishedAt,jdbcType=TIMESTAMP}, version=version+1,
+            updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND status=#{previous} AND version=#{row.version} AND deleted=0
+    </update>
+</mapper>
