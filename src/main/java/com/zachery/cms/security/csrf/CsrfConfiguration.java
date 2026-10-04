@@ -10,6 +10,6 @@ public class CsrfConfiguration implements WebMvcConfigurer {
     public CsrfConfiguration(CsrfInterceptor interceptor) { this.interceptor = interceptor; }
 
     @Override public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(interceptor).addPathPatterns("/api/**");
+        registry.addInterceptor(interceptor).addPathPatterns("/api/**").order(10);
     }
 }

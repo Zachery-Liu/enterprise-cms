@@ -38,4 +38,16 @@ public class CsrfTokenService {
             return false;
         }
     }
+
+    public String rotate(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) throw new IllegalStateException("Session required for token rotation");
+        synchronized (session) {
+            byte[] bytes = new byte[32];
+            random.nextBytes(bytes);
+            String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+            session.setAttribute(SESSION_KEY, token);
+            return token;
+        }
+    }
 }

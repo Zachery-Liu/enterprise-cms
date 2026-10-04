@@ -3,6 +3,7 @@ package com.zachery.cms.modules.identity.auth.controller;
 import com.zachery.cms.common.api.ApiResponse;
 import com.zachery.cms.modules.identity.auth.dto.*;
 import com.zachery.cms.modules.identity.auth.service.RegistrationService;
+import com.zachery.cms.security.annotation.AnonymousAccess;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ public class RegistrationController {
     public RegistrationController(RegistrationService service) { this.service = service; }
 
     @PostMapping("/register")
+    @AnonymousAccess
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RegisteredUser> register(@Valid @RequestBody RegisterRequest request) {
         return ApiResponse.ok(service.register(request));
