@@ -9,3 +9,15 @@ mybatis-plus:
   mapper-locations: classpath*:mapper/identity/*.xml
   configuration:
     map-underscore-to-camel-case: true
+cms:
+  registration:
+    default-role-code: ${CMS_REGISTRATION_DEFAULT_ROLE:USER}
+server:
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        path: /
+        secure: ${CMS_SESSION_COOKIE_SECURE:false}

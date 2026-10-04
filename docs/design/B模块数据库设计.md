@@ -146,7 +146,7 @@ erDiagram
 | 字段 | 类型 | 空值 | 默认值 | 说明 |
 | --- | --- | --- | --- | --- |
 | `id` | `BIGINT UNSIGNED` | 否 | 自增 | 用户主键，也是 A 模块用户外键目标 |
-| `username` | `VARCHAR(64)` | 否 | 无 | 登录名；去除首尾空白后长度 3～64 |
+| `username` | `VARCHAR(64)` | 否 | 无 | 登录名；去除首尾空白后长度 3～64；注册接受 ASCII 字母、数字、下划线、点和连字符，并转为小写 |
 | `password_hash` | `VARCHAR(255)` | 否 | 无 | PBKDF2 摘要字符串，禁止保存明文 |
 | `display_name` | `VARCHAR(100)` | 否 | 无 | 页面展示名称 |
 | `status` | `VARCHAR(16)` | 否 | `ACTIVE` | `ACTIVE` 或 `DISABLED` |
