@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.zachery.cms.modules.content.article.mapper.ArticleMapper">
+    <select id="selectReviewPage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
+        <bind name="titlePattern" value="query.titlePattern()"/>
+        <bind name="start" value="query.start()"/><bind name="end" value="query.end()"/>
+        SELECT a.id,a.title,a.summary,a.category_id,COALESCE(c.name,'未知分类') AS category_name,
+            a.author_id,a.status,a.version,a.created_at,a.updated_at,a.published_at,s.submitted_at
+        FROM cms_article a LEFT JOIN cms_category c ON c.id=a.category_id AND c.deleted=0
+        JOIN (SELECT article_id,MAX(created_at) AS submitted_at FROM cms_article_status_history
+              WHERE action='SUBMIT' GROUP BY article_id) s ON s.article_id=a.id
+        WHERE a.status='PENDING' AND a.deleted=0
+        <if test="query.title != null">AND a.title LIKE #{titlePattern} ESCAPE '!'</if>
+        <if test="query.categoryId != null">AND a.category_id=#{query.categoryId}</if>
+        <if test="query.authorId != null">AND a.author_id=#{query.authorId}</if>
+        <if test="query.submittedFrom != null">AND s.submitted_at &gt;= #{start}</if>
+        <if test="query.submittedTo != null">AND s.submitted_at &lt; #{end}</if>
+        ORDER BY s.submitted_at,a.id
+    </select>
+    <select id="selectPublicPage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
+        <bind name="titlePattern" value="query.titlePattern()"/>
+        SELECT a.id,a.title,a.summary,a.category_id,COALESCE(c.name,'未知分类') AS category_name,a.author_id,a.published_at
+        FROM cms_article a LEFT JOIN cms_category c ON c.id=a.category_id AND c.deleted=0
+        WHERE a.status='PUBLISHED' AND a.deleted=0
+        <if test="query.title != null">AND a.title LIKE #{titlePattern} ESCAPE '!'</if>
+        <if test="query.categoryId != null">AND a.category_id=#{query.categoryId}</if>
+        ORDER BY a.published_at DESC,a.id DESC
+    </select>
+    <select id="selectPublished" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE id=#{id} AND status='PUBLISHED' AND deleted=0
+    </select>
     <select id="selectArticlePage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
         <bind name="titlePattern" value="query.getTitlePattern()"/>
         <bind name="createdStart" value="query.getCreatedStart()"/>
