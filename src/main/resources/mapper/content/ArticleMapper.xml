@@ -59,6 +59,11 @@
     <select id="selectForUpdate" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
         SELECT * FROM cms_article WHERE id=#{id} AND deleted=0 FOR UPDATE
     </select>
+    <select id="selectBatchForUpdate" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE deleted=0 AND id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+        ORDER BY id FOR UPDATE
+    </select>
     <update id="updateContent">
         UPDATE cms_article SET title=#{row.title}, summary=#{row.summary,jdbcType=VARCHAR}, content=#{row.content},
             category_id=#{row.categoryId}, version=version+1, updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}

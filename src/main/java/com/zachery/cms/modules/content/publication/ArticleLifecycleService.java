@@ -89,4 +89,44 @@ public class ArticleLifecycleService {
         return new TransitionResult(row.getId(),target.name(),row.getVersion()+1,now.toInstant(ZoneOffset.UTC));
     }
 
+    @Transactional(isolation=Isolation.READ_COMMITTED)
+    public BatchPublishResult publishBatch(@NotNull @Valid BatchPublishCommand command) {
+        Long actor=users.getRequiredUser().userId();
+        Set<Long> ids=new TreeSet<>();
+        for(var item:command.items()) if(!ids.add(item.id())) throw new BatchPublicationException(HttpStatus.BAD_REQUEST,
+                List.of(new BatchPublicationException.Failure(item.id(),"COMMON_VALIDATION_ERROR","文章 ID 重复")));
+        categories.lockForArticleWrite();
+        var rows=articles.selectBatchForUpdate(ids);
+        Map<Long,ArticleEntity> indexed=new HashMap<>();rows.forEach(row->indexed.put(row.getId(),row));
+        var badCategories=categories.unavailableForWrites(rows.stream().map(ArticleEntity::getCategoryId).toList());
+        var failures=new ArrayList<BatchPublicationException.Failure>();
+        for(var item:command.items()) {
+            var row=indexed.get(item.id());
+            if(row==null){failures.add(new BatchPublicationException.Failure(item.id(),"COMMON_NOT_FOUND","文章不存在或已删除"));continue;}
+            if(!row.getVersion().equals(item.version())||item.version()==Integer.MAX_VALUE) {
+                failures.add(new BatchPublicationException.Failure(item.id(),"ARTICLE_VERSION_CONFLICT","文章版本已变化"));continue;
+            }
+            try {
+                ArticleTransitionPolicy.transition(ArticleStatus.valueOf(row.getStatus()),ArticleAction.PUBLISH,null);
+                if(badCategories.containsKey(row.getCategoryId())) throw new BusinessException(HttpStatus.CONFLICT,"CATEGORY_UNAVAILABLE",badCategories.get(row.getCategoryId()));
+                if(row.getTitle()==null||row.getTitle().isBlank()||row.getTitle().length()>200)
+                    throw new BusinessException(HttpStatus.BAD_REQUEST,"COMMON_VALIDATION_ERROR","文章标题无效");
+                sanitizer.forStorage(row.getContent());
+            } catch(BusinessException error){failures.add(new BatchPublicationException.Failure(item.id(),error.getCode(),error.getMessage()));}
+        }
+        if(!failures.isEmpty()) throw new BatchPublicationException(HttpStatus.CONFLICT,failures);
+        var now=LocalDateTime.now(ZoneOffset.UTC).truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+        Map<Long,TransitionResult> results=new HashMap<>();
+        for(var row:rows) {
+            try {results.put(row.getId(),applyTransition(row,"APPROVED",ArticleStatus.PUBLISHED,ArticleAction.PUBLISH,null,actor,now));}
+            catch(BusinessException error) {
+                throw new BatchPublicationException(HttpStatus.CONFLICT,List.of(new BatchPublicationException.Failure(row.getId(),error.getCode(),error.getMessage())));
+            }
+            catch(org.springframework.dao.DataAccessException error) {
+                var failure=new BatchPublicationException(HttpStatus.CONFLICT,List.of(new BatchPublicationException.Failure(row.getId(),"ARTICLE_BATCH_WRITE_FAILED","文章或历史写入失败，请刷新后重试")));
+                failure.initCause(error);throw failure;
+            }
+        }
+        return new BatchPublishResult(rows.size(),command.items().stream().map(item->results.get(item.id())).toList());
+    }
 }
