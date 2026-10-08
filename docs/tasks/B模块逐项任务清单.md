@@ -277,18 +277,20 @@ B-05、B-06 和 B-07 可在数据库设计后并行准备；B-15 至 B-17 可在
 
 **工作内容：**
 
-- [ ] 实现 `CurrentUserContext.getRequiredUser()`。
-- [ ] 实现 `/api/auth/me`。
-- [ ] 当前用户包含角色和有效权限集合。
-- [ ] 提供只读 `UserReader.findByIds`，供 A 批量组装文章作者。
-- [ ] 不向 A 暴露 UserMapper 和密码摘要。
-- [ ] 账号停用后下一次请求失效。
+- [x] 实现 `CurrentUserContext.getRequiredUser()`。
+- [x] 实现 `/api/auth/me`。
+- [x] 当前用户包含角色和有效权限集合。
+- [x] 提供只读 `UserReader.findByIds`，供 A 批量组装文章作者。
+- [x] 不向 A 暴露 UserMapper 和密码摘要。
+- [x] 账号停用后下一次请求失效。
 
 **产物：** 当前用户上下文、当前用户接口、用户批量读取接口及测试。
 
 **验收：** A 能获取真实当前用户和批量作者信息，不能通过请求参数伪造操作者。
 
 **建议提交：** `feat(auth): expose current user context`
+
+**状态：** 实现及自动化验证完成（2026-10-08），MySQL 8.0、ApiFox 和 A 的文章作者接入待验收。见 [B-10 验证记录](../verification/B10当前用户与用户读取验证记录.md)及[A 接入说明](../api/B10当前用户与用户读取.md)。
 
 ### B-11 实现用户分页和账号启停
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zachery.cms.modules.identity.persistence.mapper.UserSummaryMapper">
+    <resultMap id="summary" type="com.zachery.cms.modules.identity.user.service.UserSummary">
+        <constructor>
+            <idArg column="id" javaType="java.lang.Long"/>
+            <arg column="username" javaType="java.lang.String"/>
+            <arg column="display_name" javaType="java.lang.String"/>
+            <arg column="status" javaType="com.zachery.cms.common.context.UserStatus"/>
+        </constructor>
+    </resultMap>
+    <!-- Disabled authors remain visible on historical content. Never fetch password hashes. -->
+    <select id="selectSummaries" resultMap="summary">
+        SELECT id, username, display_name, status FROM sys_user WHERE deleted = 0
+        <choose>
+            <when test="userIds != null and userIds.size() > 0">
+                AND id IN
+                <foreach collection="userIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND 1 = 0</otherwise>
+        </choose>
+        ORDER BY id
+    </select>
+</mapper>
