@@ -2,16 +2,23 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 文档版本 | V1.0 |
+| 文档版本 | V1.1 |
 | 编制日期 | 2026-09-15 |
+| 修订日期 | 2026-10-08 |
 | 负责人 | B |
-| 建议分支 | `feature/security` |
+| 建议分支 | 业务基线 `feature/security`；迁移使用 `feat/security-ssm` |
 | 模块范围 | 用户认证、角色权限、Spring AOP、操作日志、统一响应异常 |
-| 任务数量 | 20 个 |
+| 任务数量 | 原业务任务 20 个，新增 SSM 迁移任务 6 个 |
 
 ## 1 使用方式
 
-本清单将 BH-00 至 BH-07 高层工作包拆成可独立创建 GitHub Issue、编码、测试和提交的任务。细粒度任务统一使用 `B-01` 至 `B-20`；任务编号一经使用不再改变，新增工作使用后续编号。
+本清单将 BH-00 至 BH-07 高层工作包拆成可独立创建 GitHub Issue、编码、测试和提交的任务。业务任务保留 `B-01` 至 `B-20`；本轮新增独立编号 `B-M01` 至 `B-M06` 表示传统 SSM 迁移，不改变已使用编号。
+
+### 1.1 本轮远端基线与完成状态
+
+2026-10-08 已拉取并检查 `origin/feature/security@dff0cca`。B-04～B-10、B-12/B-13 已有远端实现与验证记录，部分仍待 MySQL 8.0、ApiFox 和 A 接入验收；B-03 整体验收还有 A SQL 的已知阻塞。B-11、B-14～B-20 尚未整体完成，`PermissionQueryGuard` 是权限 AOP 完成前的临时保护。
+
+原任务中的日期、勾选和完成状态保留为历史记录；不能据此认定传统 SSM 迁移已完成。新增 B-M 任务全部待执行，已完成的业务须经 B-M05 在新环境回归。以远端 Session/CSRF 拦截器为迁移对象，不混入本地未提交的替代实现。A 按[A 逐项清单](A模块逐项任务清单.md)重新开发内容模块。
 
 每个任务应满足：
 
@@ -31,6 +38,7 @@ B 负责：
 - `CurrentUserContext`、`UserReader`、权限注解和 Spring AOP。
 - 操作日志注解、切面和日志查询。
 - 统一响应、分页结构、异常、校验和请求标识。
+- 传统 SSM 公共工程、WAR 构建、外部 Tomcat 启动、显式 MVC/持久层/事务配置和公共测试迁移。
 
 B 不负责：
 
@@ -43,6 +51,7 @@ B 不负责：
 
 | 里程碑 | 任务 | 退出条件 |
 | --- | --- | --- |
+| BM-SSM 迁移 | B-M01 至 B-M05；B-M06 文档交付 | 无 Boot 依赖，外部 Tomcat 可运行，已完成身份和公共能力通过迁移回归；A 获得可接入的基线 |
 | BM0 契约与数据 | B-01 至 B-03 | 公共契约确定，B 的 SQL 可执行，A 获得 `sys_user` 外键契约 |
 | BM1 公共基础 | B-04 至 B-07 | Entity、Mapper、统一响应、异常、校验和请求标识可用 |
 | BM2 认证与用户 | B-08、B-09、B-11 | 注册登录退出和账号管理可演示 |
@@ -53,15 +62,114 @@ B 不负责：
 关键路径：
 
 ```text
-B-01 -> B-02 -> B-03 -> B-04
-  -> B-08 -> B-09 -> B-12
-  -> B-10 -> B-13 -> B-14
+B-M01 -> B-M02 -> B-M03 -> B-M04 -> B-M05 -> B-M06
+  -> B-14（与 A 分类接口联调）
+  -> B-15（与 A 写操作联调）
   -> B-18 -> B-19 -> B-20
 ```
 
-B-05、B-06 和 B-07 可在数据库设计后并行准备；B-15 至 B-17 可在 RBAC 主流程稳定后推进。
+B 的既有业务保留，优先迁移配置和测试；B-11、B-16、B-17 在对应依赖可用后继续推进。A 可在迁移期间重做领域设计和 SQL，业务接口最终验收必须接入真实权限和日志能力。
 
-## 4 逐项任务
+### B-M01 去除 Boot 并建立 WAR 构建
+
+**目标：** 保留远端业务，改为可独立管理版本的传统 SSM 工程。
+
+**依赖：** 远端业务基线；先隔离本地未提交内容。
+
+- [ ] 删除 Boot parent、BOM、starter 和 Maven 插件，排查传递依赖。
+- [ ] 显式管理 Spring MVC/context/jdbc/tx/aop、AspectJ、Jackson 与时间模块、Validation、连接池、驱动、日志和测试依赖。
+- [ ] 使用兼容 Spring 的非 Boot MyBatis-Plus/MyBatis-Spring 集成；Servlet API 设为 provided。
+- [ ] 设置 WAR 打包和编译、测试、WAR 插件版本，锁定兼容技术版本。
+- [ ] 移除 `scripts/build.ps1` 的 E 盘硬编码，构建基于项目根目录。
+
+**产物：** POM、构建脚本、依赖树记录。
+
+**验收：** 无 Boot 依赖，普通 Maven 构建能生成 WAR，无特定盘符限制。
+
+**状态：** 待执行。
+
+### B-M02 建立 Spring 与 MVC 容器
+
+**依赖：** B-M01。
+
+- [ ] 替换 `CmsApplication`，用普通 Servlet 初始化方式注册根容器与 DispatcherServlet，不使用 Boot Servlet 初始化器。
+- [ ] 根容器扫描 Service/持久层，MVC 容器扫描 Controller/异常处理，防止重复 Bean。
+- [ ] 为 A 的 content 组件、Mapper、XML 预留扫描扩展。
+- [ ] 根据切面作用位置，在对应容器启用 AOP；验证 Controller 切面不会因容器层级遗漏。
+
+**产物：** Web 初始化与容器配置。
+
+**验收：** 初始化与组件扫描配置完成；与 B-M03/B-M04 组合后在外部 Tomcat 启动，完整接口回归在 B-M05 验收。
+
+**状态：** 待执行。
+
+### B-M03 显式配置 MyBatis-Plus 与事务
+
+**依赖：** B-M02。
+
+- [ ] 配置 DataSource、MybatisSqlSessionFactoryBean、Mapper 扫描、identity/content XML 和事务管理器，启用事务。
+- [ ] 显式配置驼峰映射、逻辑删除、GlobalConfig 和已有 MetaObjectHandler。
+- [ ] 保留乐观锁，统一补充 A 需要的分页插件及其依赖，避免多套插件链。
+- [ ] 移除 `ConditionalOnMissingBean`；生产使用 SessionAuditActorProvider，测试按需提供独立替代，避免重复 Bean。
+- [ ] 验证自动填充、逻辑删除、乐观锁、注册及角色权限分配事务和故障回滚。
+
+**产物：** 持久层/事务配置和回归记录。
+
+**验收：** 业务持久化行为不变，content 扩展可用，真实操作者可填入审计字段。
+
+**状态：** 待执行。
+
+### B-M04 显式配置 MVC、认证与会话
+
+**依赖：** B-M03。
+
+- [ ] 替换 Boot 自动属性绑定，显式加载配置；保留环境变量凭证和默认注册角色设置。
+- [ ] 配置 JSON 与 Java 时间、UTC、Bean Validation、Service 方法校验和统一异常。
+- [ ] 显式注册 RequestIdFilter，保留 MDC/上下文清理和所需异步、错误分派。
+- [ ] 在 MVC 容器接入远端 SessionAuthenticationInterceptor（order=0）和 CsrfInterceptor（order=10）。
+- [ ] 配置会话超时、Cookie HttpOnly/Secure/SameSite/路径与 Cookie 跟踪。
+- [ ] 验证 WAR 上下文路径并统一 ApiFox base URL；公开 GET 使用 AnonymousAccess，后台写接口继续通过认证和 CSRF。
+
+**产物：** MVC/会话配置、配置示例和接口回归记录。
+
+**验收：** 登录轮换、退出失效、停用拒绝、CSRF、requestId 和原响应契约正常。
+
+**状态：** 待执行。
+
+### B-M05 迁移测试并验证真实 HTTP
+
+**依赖：** B-M04。
+
+- [ ] 用 JUnit 5 Spring 扩展、ContextConfiguration/WebAppConfiguration 和 MockMvc 替换 Boot 测试注解；替换 Boot TestConfiguration。
+- [ ] 配置测试数据源、schema 初始化和隔离策略。
+- [ ] 迁移 CommonWebContractTest、IdentityMapperIntegrationTest、RegistrationIntegrationTest、SessionIntegrationTest、CurrentUserIntegrationTest、RbacQueryIntegrationTest、RbacAssignmentIntegrationTest。
+- [ ] 保留密码、请求校验、requestId 等原单元测试场景。
+- [ ] 外部 Tomcat 真实 HTTP 验证 Cookie 属性、会话轮换、退出后旧会话失效和上下文路径。
+- [ ] 保存新环境实际结果，另行完成目标 MySQL 的数据库验收，不用 H2 结果替代。
+
+**产物：** 迁移后的测试与新验证记录。
+
+**验收：** 原核心行为回归通过，源码与测试无 Boot API；保留原断言含义。
+
+**状态：** 待执行。
+
+### B-M06 交付 SSM 基线与接入说明
+
+**依赖：** B-M05。
+
+- [ ] 提供基线提交、WAR 构建与外部 Tomcat 部署说明、配置示例及 ApiFox 环境。
+- [ ] 更新公共契约和迁移记录，原 Boot 测试记录保留为历史证据。
+- [ ] 向 A 提供已实现能力及 B-14/B-15 待实现能力的准确清单。
+- [ ] 约定内容组件/XML、分页插件、审计字段及公开接口接入方式。
+- [ ] 与 A 的 A-M00 联合验收，优先安排 B-14 分类权限联调及 B-15 写操作日志联调。
+
+**产物：** 可接入的基线与公共交付文档。
+
+**验收：** A 可使用新工程开发，未完成业务明确列出；本任务不代替 B-14/B-15 的验收。
+
+**状态：** 待执行。
+
+## 4 逐项业务任务（保留历史记录，新增迁移回归要求）
 
 ### B-01 固定公共契约
 
@@ -533,7 +641,7 @@ Issue 正文至少包含：
 - 接口或数据库影响。
 - 测试证据位置。
 
-建议标签：`owner:B`、`module:security`、`type:feature`、`priority:P0`。里程碑使用 BM0 至 BM5。
+建议标签：`owner:B`、`module:security`、`type:feature`、`priority:P0`。业务里程碑使用 BM0 至 BM5，迁移任务使用 BM-SSM；Issue 可用 `[B-M01]` 等迁移编号。
 
 ## 7 每项任务完成定义
 
@@ -549,20 +657,16 @@ Issue 正文至少包含：
 
 ## 8 B 开工顺序
 
-建议 B 首批连续完成：
+本轮不重复开发远端已有业务，按以下顺序推进：
 
 ```text
-B-01 公共契约
-  -> B-02 数据库设计
-  -> B-03 建表与初始化 SQL
-  -> B-05 统一响应
-  -> B-06 统一异常
-  -> B-08 注册
-  -> B-09 登录退出
-  -> B-12 角色权限查询
-  -> B-10 当前用户上下文
-  -> B-13 角色权限配置
-  -> B-14 权限 AOP
+B-M01～B-M04 工程与配置迁移
+  -> B-M05 已实现业务回归
+  -> B-M06 SSM 基线交付 / A-M00 接入
+  -> B-14 权限 AOP / A 分类接口联调
+  -> B-15 操作日志 / A 写操作联调
+  -> B-11、B-16、B-17 剩余功能与优化
+  -> B-18～B-20 联调、测试与交付
 ```
 
 完成 B-14 后立即与 A 做第一次权限联调，再继续操作日志、查询优化和完整测试。

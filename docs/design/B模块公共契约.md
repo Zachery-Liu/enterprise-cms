@@ -4,6 +4,7 @@
 | --- | --- |
 | 文档版本 | V1.0 |
 | 编制日期 | 2026-09-15 |
+| 技术约束修订 | 2026-10-08：禁止 Spring Boot，业务接口沿用远端契约 |
 | 对应任务 | B-01 |
 | 负责人 | B |
 | 使用方 | A 与 B 全部后台模块 |
@@ -17,6 +18,7 @@
 | 数据库 | MySQL 8.0 |
 | ORM | MyBatis-Plus，复杂查询使用 XML Mapper |
 | Web | Spring MVC |
+| 核心与运行 | Spring Framework，WAR 部署外部 Tomcat；禁止 Spring Boot |
 | 登录 | 服务端 Session |
 | 根包名 | `com.zachery.cms` |
 | Java 主键 | `Long` |
@@ -26,6 +28,8 @@
 | 排序规则 | `utf8mb4_unicode_ci` |
 
 具体 Spring、MyBatis-Plus、Servlet 和数据库驱动版本由工程初始化时在 `pom.xml` 中锁定，但不得改变本契约定义的业务接口和数据类型。
+
+本轮由 B 迁移公共工程，A 从迁移验收后的提交重新开发内容模块。推荐 JDK 17、Spring 6.x 与 Tomcat 10.1，以保留现有 jakarta 体系；若教师指定 Spring 5/Tomcat 9，必须统一迁移命名空间及兼容依赖。禁止 Boot parent、BOM、starter、插件和运行/测试 API；MyBatis-Plus 使用非 Boot 集成。配置加载、数据源、事务、MVC、参数校验、Session 和过滤器均须显式配置。具体任务见[B-M01～B-M06](../tasks/B模块逐项任务清单.md)。已有业务完成记录不等于新环境回归通过。
 
 ### 1.1 单体项目目录与包边界
 
