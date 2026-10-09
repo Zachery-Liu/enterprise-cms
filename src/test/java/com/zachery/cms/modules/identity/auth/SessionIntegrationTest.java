@@ -15,9 +15,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.*;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.*;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,24 +32,21 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
-        "spring.main.web-application-type=servlet",
-        "spring.datasource.url=jdbc:h2:mem:b09_session;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1",
-        "cms.registration.default-role-code=USER",
-        "server.address=127.0.0.1",
-        "server.servlet.session.cookie.secure=false"
-})
+@org.springframework.test.context.TestPropertySource(properties = "cms.db.url=jdbc:h2:mem:sessionintegrationtest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000")
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Import(SessionIntegrationTest.Probes.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class SessionIntegrationTest {
+@org.springframework.test.context.ContextHierarchy({
+    @org.springframework.test.context.ContextConfiguration(name = "root", classes = {com.zachery.cms.config.RootConfiguration.class, com.zachery.cms.support.TestDatabaseConfiguration.class}),
+    @org.springframework.test.context.ContextConfiguration(name = "web", classes = {com.zachery.cms.config.WebConfiguration.class, com.zachery.cms.support.MockMvcConfiguration.class, SessionIntegrationTest.Probes.class})
+})
+class SessionIntegrationTest extends com.zachery.cms.support.SpringWebIntegrationTest {
     private static final String PASSWORD = "FixturePass123!";
     private static final String HASH = "{pbkdf2-sha256}600000$AAECAwQFBgcICQoLDA0ODw==$wpcF9hlr08mvG4XuvsbKoBoWwAQhRgzErA9WLtQ1Tx8=";
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
-    @LocalServerPort int port;
+    int port;
+    @Autowired org.springframework.web.context.WebApplicationContext web;
     private Long userId;
 
     record Token(MockHttpSession session, String value) {}
@@ -210,6 +204,8 @@ class SessionIntegrationTest {
 
     @Test
     void realHttpCookiesRotateAndOldSessionCannotBeReusedAfterLogout() throws Exception {
+        try (var server = new com.zachery.cms.support.TestHttpServer(web.getParent(), Probes.class)) {
+        port = server.port();
         CookieManager cookies = new CookieManager(null, CookiePolicy.ACCEPT_ALL);
         HttpClient client = HttpClient.newBuilder().cookieHandler(cookies).connectTimeout(Duration.ofSeconds(5)).build();
         HttpClient staleClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -239,6 +235,8 @@ class SessionIntegrationTest {
                 HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(401);
     }
 
+    }
+
     private HttpRequest.Builder http(String path) {
         return HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(10));
     }
@@ -261,7 +259,7 @@ class SessionIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)));
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
+    @Configuration(proxyBeanMethods = false)
     static class Probes {
         @Bean SessionProbeController sessionProbeController() { return new SessionProbeController(); }
     }
