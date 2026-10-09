@@ -1,0 +1,7 @@
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder><pattern>%date{ISO8601,UTC} %-5level [%thread] requestId=%X{requestId} %logger{40} - %msg%n</pattern></encoder>
+    </appender>
+    <!-- Keep SQL parameters and credential-bearing DEBUG messages out of production logs. -->
+    <root level="INFO"><appender-ref ref="CONSOLE"/></root>
+</configuration>

@@ -13,9 +13,6 @@ import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.session.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -28,14 +25,13 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {
-        "spring.main.web-application-type=servlet",
-        "spring.datasource.url=jdbc:h2:mem:b12_rbac;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
-})
+@org.springframework.test.context.TestPropertySource(properties = "cms.db.url=jdbc:h2:mem:rbacqueryintegrationtest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000")
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Import(RbacQueryIntegrationTest.CountConfiguration.class)
-class RbacQueryIntegrationTest {
+@org.springframework.test.context.ContextHierarchy({
+    @org.springframework.test.context.ContextConfiguration(name = "root", classes = {com.zachery.cms.config.RootConfiguration.class, com.zachery.cms.support.TestDatabaseConfiguration.class, RbacQueryIntegrationTest.CountConfiguration.class}),
+    @org.springframework.test.context.ContextConfiguration(name = "web", classes = {com.zachery.cms.config.WebConfiguration.class, com.zachery.cms.support.MockMvcConfiguration.class})
+})
+class RbacQueryIntegrationTest extends com.zachery.cms.support.SpringWebIntegrationTest {
     @Autowired RbacQueryService service;
     @Autowired RbacQueryMapper mapper;
     @Autowired JdbcTemplate jdbc;
@@ -250,7 +246,7 @@ class RbacQueryIntegrationTest {
         return session;
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
+    @org.springframework.context.annotation.Configuration(proxyBeanMethods = false)
     static class CountConfiguration {
         @Bean SqlCounter sqlCounter() { return new SqlCounter(); }
     }

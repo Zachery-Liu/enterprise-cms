@@ -28,3 +28,4 @@ Thumbs.db
 runtime/
 .cache/
 .env
+config/cms.local.properties

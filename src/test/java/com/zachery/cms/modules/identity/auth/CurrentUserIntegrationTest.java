@@ -15,8 +15,6 @@ import org.apache.ibatis.plugin.*;
 import org.apache.ibatis.session.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.*;
 import org.springframework.context.annotation.*;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -32,14 +30,13 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {
-        "spring.main.web-application-type=servlet",
-        "spring.datasource.url=jdbc:h2:mem:b10_current_user;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1"
-})
+@org.springframework.test.context.TestPropertySource(properties = "cms.db.url=jdbc:h2:mem:currentuserintegrationtest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000")
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Import({CurrentUserIntegrationTest.ProbeController.class, CurrentUserIntegrationTest.ProbeConfiguration.class})
-class CurrentUserIntegrationTest {
+@org.springframework.test.context.ContextHierarchy({
+    @org.springframework.test.context.ContextConfiguration(name = "root", classes = {com.zachery.cms.config.RootConfiguration.class, com.zachery.cms.support.TestDatabaseConfiguration.class, CurrentUserIntegrationTest.ProbeConfiguration.class}),
+    @org.springframework.test.context.ContextConfiguration(name = "web", classes = {com.zachery.cms.config.WebConfiguration.class, com.zachery.cms.support.MockMvcConfiguration.class, CurrentUserIntegrationTest.ProbeController.class})
+})
+class CurrentUserIntegrationTest extends com.zachery.cms.support.SpringWebIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
@@ -312,7 +309,7 @@ class CurrentUserIntegrationTest {
     }
 
     record Query(String id, String sql) {}
-    @TestConfiguration(proxyBeanMethods = false)
+    @org.springframework.context.annotation.Configuration(proxyBeanMethods = false)
     static class ProbeConfiguration { @Bean QueryProbe queryProbe() { return new QueryProbe(); } }
     @Intercepts(@Signature(type = Executor.class, method = "query",
             args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}))
