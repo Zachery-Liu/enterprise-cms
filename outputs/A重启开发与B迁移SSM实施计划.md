@@ -4,6 +4,8 @@
 
 本计划按老师禁止 Spring Boot、保留 Spring 与 Spring MVC 的约束编制。按课程现有要求保留 MyBatis-Plus、MySQL、参数校验和 Spring AOP。A 旧实现不作为新开发基础；本文不执行代码删除、分支重置或合并。
 
+执行更新（2026-10-09）：B 已从 `dff0cca` 完成传统 SSM 迁移，代码提交 `420fa8f` 位于 `feat/security-ssm`。B-M01～B-M05 验证通过；B-M06 部署、配置和接入文档已准备，仍待 A-M00 联合验收。下文保留最初计划语义，实际结果以[迁移验证记录](../docs/verification/BM01-BM06传统SSM迁移验证记录.md)为准。B-14/B-15 尚未完成。
+
 方案已落实到[A/B 任务分工](../docs/A与B模块任务分工.md)、[A 逐项任务清单](../docs/tasks/A模块逐项任务清单.md)与[B 逐项任务清单](../docs/tasks/B模块逐项任务清单.md)。执行及勾选进度以这些任务文件为准。
 
 ## 1 远端核实结果
