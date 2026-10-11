@@ -1,0 +1,15 @@
+B17_EVIDENCE pageSize=10 round=1 users=120 before=12 after=3 equal=true
+B17_EVIDENCE pageSize=10 round=2 users=120 before=12 after=3 equal=true
+B17_EVIDENCE pageSize=10 round=3 users=120 before=12 after=3 equal=true
+B17_EVIDENCE pageSize=10 round=4 users=120 before=12 after=3 equal=true
+B17_EVIDENCE pageSize=10 round=5 users=120 before=12 after=3 equal=true
+B17_EVIDENCE pageSize=20 round=1 users=120 before=22 after=3 equal=true
+B17_EVIDENCE pageSize=20 round=2 users=120 before=22 after=3 equal=true
+B17_EVIDENCE pageSize=20 round=3 users=120 before=22 after=3 equal=true
+B17_EVIDENCE pageSize=20 round=4 users=120 before=22 after=3 equal=true
+B17_EVIDENCE pageSize=20 round=5 users=120 before=22 after=3 equal=true
+B17_EVIDENCE pageSize=100 round=1 users=120 before=102 after=3 equal=true
+B17_EVIDENCE pageSize=100 round=2 users=120 before=102 after=3 equal=true
+B17_EVIDENCE pageSize=100 round=3 users=120 before=102 after=3 equal=true
+B17_EVIDENCE pageSize=100 round=4 users=120 before=102 after=3 equal=true
+B17_EVIDENCE pageSize=100 round=5 users=120 before=102 after=3 equal=true
