@@ -11,5 +11,6 @@ public interface RbacQueryMapper {
     RoleSummary selectRole(@Param("id") long id);
     List<PermissionSummary> selectPermissions();
     List<UserRoleRow> selectRolesForUsers(@Param("userIds") List<Long> userIds);
+    List<UserRoleRow> selectAssignedRolesForUsers(@Param("userIds") List<Long> userIds);
     List<RolePermissionRow> selectPermissionsForRoles(@Param("roleIds") List<Long> roleIds);
 }

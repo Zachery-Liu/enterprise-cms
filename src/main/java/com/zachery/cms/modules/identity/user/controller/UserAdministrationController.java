@@ -23,7 +23,7 @@ public class UserAdministrationController {
     }
     @GetMapping
     @RequirePermission("cms:user:read")
-    public ResponseEntity<ApiResponse<PageResponse<UserAdminView>>> query(@RequestParam MultiValueMap<String,String> parameters) {
+    public ResponseEntity<ApiResponse<PageResponse<UserListView>>> query(@RequestParam MultiValueMap<String,String> parameters) {
         if (parameters.entrySet().stream().anyMatch(e -> !PARAMETERS.contains(e.getKey()) || e.getValue().size()!=1))
             throw new RequestValidationException("query","存在未知参数或重复参数");
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())

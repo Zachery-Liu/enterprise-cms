@@ -100,6 +100,9 @@ class ExternalTomcatIT {
             JsonNode account=accountPage.path("records").get(0);
             assertThat(account.path("id").asLong()).isEqualTo(userId);
             assertThat(account.has("passwordHash")).isFalse();
+            assertThat(account.path("roles").size()).isEqualTo(1);
+            assertThat(account.path("roles").get(0).path("id").asLong()).isEqualTo(roleId);
+            assertThat(account.path("roles").get(0).path("code").asText()).isEqualTo("HTTP_"+suffix);
             int accountVersion=account.path("version").asInt();
             JsonNode stopped=data(request(manager,"PUT","/api/users/"+userId+"/status",
                     Map.of("status","DISABLED","version",accountVersion),managerCsrf),200);
