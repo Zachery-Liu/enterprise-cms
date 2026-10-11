@@ -47,6 +47,7 @@ class ExternalTomcatIT {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0,12);
         String username = "http_"+suffix, password = "FixturePass123!";
         HttpClient user = client(), manager = client();
+        data(request(client(),"GET","/api/operation-logs",null,null),401);
         var csrfResponse = request(user,"GET","/api/auth/csrf-token",null,null);
         String csrf = data(csrfResponse,200).path("token").asText();
         String anonymousCookie = csrfResponse.headers().firstValue("set-cookie").orElseThrow();
@@ -66,6 +67,7 @@ class ExternalTomcatIT {
         staleCookieRejected(anonymousCookie);
         assertThat(data(request(user,"GET","/api/auth/me",null,null),200).path("userId").asLong()).isEqualTo(userId);
         data(request(user,"GET","/api/roles",null,null),403);
+        data(request(user,"GET","/api/operation-logs",null,null),403);
         data(request(user,"POST","/api/auth/logout",null,csrf),403);
 
         String managerCsrf = token(manager);
@@ -99,6 +101,13 @@ class ExternalTomcatIT {
             assertAuditCount(connection, "AUTH", "LOGOUT", userId, 1);
             assertAuditCount(connection, "USER", "ASSIGN_ROLES", userId, 1);
             assertAuditCount(connection, "ROLE", "ASSIGN_PERMISSIONS", roleId, 2);
+            JsonNode audit = data(request(manager,"GET","/api/operation-logs?operatorId="+userId
+                    +"&module=AUTH&action=LOGIN&result=SUCCESS&size=1",null,null),200);
+            assertThat(audit.path("total").asLong()).isEqualTo(2);
+            assertThat(audit.path("records").size()).isEqualTo(1);
+            assertThat(audit.path("records").get(0).path("operatorId").asLong()).isEqualTo(userId);
+            assertThat(audit.path("records").get(0).path("createdAt").asText()).endsWith("Z");
+            data(request(manager,"GET","/api/operation-logs?size=101",null,null),400);
         }
         data(request(manager,"POST","/api/auth/logout",null,managerCsrf),200);
     }

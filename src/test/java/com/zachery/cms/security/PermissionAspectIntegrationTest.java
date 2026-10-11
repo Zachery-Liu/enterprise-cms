@@ -164,7 +164,7 @@ class PermissionAspectIntegrationTest extends SpringWebIntegrationTest {
             assertThat(handler.hasMethodAnnotation(AnonymousAccess.class)).isFalse();
             assertThat(AopUtils.isAopProxy(web.getBean(handler.getBeanType()))).isTrue();
         }
-        assertThat(protectedEndpoints).isEqualTo(6);
+        assertThat(protectedEndpoints).isEqualTo(7); // Includes the B-16 log query endpoint.
     }
 
     private MockHttpSession session(long id) {
