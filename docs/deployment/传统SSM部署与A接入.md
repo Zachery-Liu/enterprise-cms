@@ -1,6 +1,6 @@
 # 传统 SSM 部署与 A 接入
 
-更新：2026-10-11。迁移基线位于 `feat/security-ssm`；B-14 位于 `feat/security-aop`；B-15 位于 `feat/operation-log`；当前 B-16 分支为 `feat/operation-log-query`，包含上述成果。具体提交见本文件所在分支的 Git 历史和验证记录。
+更新：2026-10-11。迁移基线位于 `feat/security-ssm`；B-14 位于 `feat/security-aop`；B-15 位于 `feat/operation-log`；B-16 位于 `feat/operation-log-query`；当前 B-11 分支为 `feat/user-administration`，包含上述成果。具体提交见本文件所在分支的 Git 历史和验证记录。
 
 ## 1 环境与构建
 
@@ -22,7 +22,7 @@ mvn dependency:tree
 
 Windows 可使用 `scripts/build.ps1`，它将临时目录和 Maven 缓存放在项目内，不固定盘符。B 本机将项目放 E 盘，所以相关文件也落在 E 盘。仓库脚本使用 `scripts/settings.xml`；需要代理/镜像时，可使用个人 Maven settings 执行 Maven，不要提交个人凭证。
 
-成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 155 项自动测试（B-15 基线 143 项 + B-16 新增 12 项），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。B-16 无新增 SQL 迁移，接口见[日志查询说明](../api/B16操作日志查询.md)。
+成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 170 项自动测试（B-16 基线 155 项 + B-11 新增 15 项），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。B-11、B-16 无新增 SQL 迁移，接口见[用户管理](../api/B11用户管理.md)与[日志查询](../api/B16操作日志查询.md)。
 
 ## 2 数据库
 
