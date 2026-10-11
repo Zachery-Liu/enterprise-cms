@@ -1,6 +1,6 @@
 # 传统 SSM 部署与 A 接入
 
-更新：2026-10-11。迁移基线位于 `feat/security-ssm`；B-14 后续实现位于 `feat/security-aop`。具体提交见本文件所在分支的 Git 历史和验证记录。
+更新：2026-10-11。迁移基线位于 `feat/security-ssm`；B-14 位于 `feat/security-aop`；当前 B-15 分支为 `feat/operation-log`，包含前两者。具体提交见本文件所在分支的 Git 历史和验证记录。
 
 ## 1 环境与构建
 
@@ -22,7 +22,7 @@ mvn dependency:tree
 
 Windows 可使用 `scripts/build.ps1`，它将临时目录和 Maven 缓存放在项目内，不固定盘符。B 本机将项目放 E 盘，所以相关文件也落在 E 盘。仓库脚本使用 `scripts/settings.xml`；需要代理/镜像时，可使用个人 Maven settings 执行 Maven，不要提交个人凭证。
 
-成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 125 项自动测试（迁移基线 112 项 + B-14 新增 13 项），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。
+成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 143 项自动测试（B-14 基线 125 项 + B-15 新增 18 项），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。
 
 ## 2 数据库
 
@@ -91,13 +91,13 @@ Session 仅使用 Cookie，默认 30 分钟空闲超时。Cookie 为 HttpOnly、
 | 公开接口 | 方法标注 `@AnonymousAccess`；只读 GET 不要求 CSRF，写请求仍要求 CSRF |
 | 新配置 / 切面 | `@Configuration` 不随模块自动扫描，显式加入对应容器的 `@Import`；作用于 Controller 的切面放 MVC 容器，Service 切面放根容器 |
 
-两层容器都启用了 AOP；本分支已将 `PermissionAspect` 显式导入 MVC 子容器，现有 6 个角色/权限入口改用 `@RequirePermission`，旧 `PermissionQueryGuard` 已移除。A 在 Controller 的 public、非 final 实现方法上声明对应权限，见[B-14 接入说明](../api/B14权限注解接入.md)。A 的真实业务接口仍需联调验收；**B-15 操作日志尚未实现**。
+两层容器都启用了 AOP；`PermissionAspect` 显式导入 MVC 子容器，现有 6 个角色/权限入口使用 `@RequirePermission`，旧 `PermissionQueryGuard` 已移除。A 在 Controller 的 public、非 final 实现方法上声明权限，见[B-14 接入说明](../api/B14权限注解接入.md)。B-15 日志切面注册在根容器，支持 Service 和 MVC 代理，推荐把日志注解放在负责写事务的 Service。成功日志与业务同事务，受检异常也默认回滚，见[B-15 接入说明](../api/B15操作日志接入.md)。A 真实业务仍需联调验收。
 
 迁移范围已交付注册、登录退出、当前用户、用户批量读取、角色权限查询和分配、公共响应/异常/校验/requestId。用户管理完整业务、日志及其查询等剩余任务以 B 清单为准。
 
 ## 7 联合接入下一步
 
-A 新开始接入时可从 `feat/security-aop` 的完整基线建立内容分支，包含 SSM 迁移及 B-14；若已经基于 `feat/security-ssm` 开发，先审查并合入 B-14 提交，保留自己的改动。避免只摘取单个配置文件。双方按 A-M00 检查构建、数据库配置、content Mapper/XML、作者读取及权限接口；A 实际验收结果另行记录。本次没有替 A 确认验收，也未合并 main。
+A 新开始接入时可从 `feat/operation-log` 的完整基线建立内容分支，包含 SSM 迁移、B-14 和 B-15；若已经基于之前的分支开发，先审查并合入后续提交，保留自己的改动。避免只摘取单个配置文件。双方按 A-M00 检查构建、数据库配置、content Mapper/XML、作者读取、权限及日志；A 实际验收结果另行记录。本次没有替 A 确认验收，也未合并 main。
 
 随后继续 B-14 分类权限联调，再做 B-15 写操作日志联调。原 Boot 验证记录作为历史保留，新环境结论见迁移验证记录。
 

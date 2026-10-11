@@ -11,7 +11,7 @@
 
 ## 1 技术与命名基线
 
-2026-10-09 迁移实现已在 `feat/security-ssm` 的代码提交 `420fa8f` 完成并验证。业务契约沿用本文，具体容器、Mapper/XML、分页和外部部署约定见[部署与 A 接入说明](../deployment/传统SSM部署与A接入.md)，结果见[迁移验证记录](../verification/BM01-BM06传统SSM迁移验证记录.md)。2026-10-11 的 `feat/security-aop` 已实现 B-14 权限注解与切面；A-M00 联合验收、B-14 真实 A 接口联调及 B-15 仍待完成。
+2026-10-09 迁移实现已在 `feat/security-ssm` 的代码提交 `420fa8f` 完成并验证。业务契约沿用本文，具体容器、Mapper/XML、分页和外部部署约定见[部署与 A 接入说明](../deployment/传统SSM部署与A接入.md)，结果见[迁移验证记录](../verification/BM01-BM06传统SSM迁移验证记录.md)。2026-10-11 已在 `feat/security-aop` 实现 B-14，在其后续分支 `feat/operation-log` 实现 B-15。A-M00 联合验收以及真实 A 接口权限、日志联调仍待完成。
 
 | 项目 | 约定 |
 | --- | --- |
@@ -343,6 +343,8 @@ public @interface OperationLog {
 `targetIdExpression` 使用 Spring Expression Language：可以引用方法参数，例如 `#articleId`；成功返回后可以引用 `#result`。切面在成功返回后计算包含 `#result` 的表达式，失败时只能使用方法参数；无法取得目标 ID 时记录为空，不能伪造 ID。分类、文章、审核、发布等存在明确业务对象的写操作必须填写目标类型和目标 ID 表达式。
 
 日志切面记录真实执行结果，不记录密码、Session、Cookie、完整请求体或文章正文。A 使用注解，B 负责注解实现、表达式解析和持久化。
+
+2026-10-11 实现补充：module/action/非空 targetType 使用大写稳定编码；表达式使用受限只读 SpEL，仅允许参数/返回值的 ID 属性路径，未知目标记为空。成功日志和业务同事务；日志写入失败导致业务回滚，失败日志在回滚后独立保存。默认 Spring 事务对受检异常也回滚。登录/退出的 Session 副作用不受数据库事务管理，采用独立尽力记录并保留控制台告警。详见[B-15 接入与事务说明](../api/B15操作日志接入.md)。
 
 ## 14 数据状态编码
 

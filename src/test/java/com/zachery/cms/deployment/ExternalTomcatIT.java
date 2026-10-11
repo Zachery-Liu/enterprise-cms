@@ -94,7 +94,19 @@ class ExternalTomcatIT {
             data(request(user,"POST","/api/auth/login",Map.of("username",username,"password",password),csrf),200);
             try (PreparedStatement update=connection.prepareStatement("UPDATE sys_user SET status='DISABLED' WHERE id=?")) { update.setLong(1,userId); update.executeUpdate(); }
             data(request(user,"GET","/api/auth/me",null,null),401);
+            assertAuditCount(connection, "AUTH", "REGISTER", userId, 1);
+            assertAuditCount(connection, "AUTH", "LOGIN", userId, 2);
+            assertAuditCount(connection, "AUTH", "LOGOUT", userId, 1);
+            assertAuditCount(connection, "USER", "ASSIGN_ROLES", userId, 1);
+            assertAuditCount(connection, "ROLE", "ASSIGN_PERMISSIONS", roleId, 2);
         }
         data(request(manager,"POST","/api/auth/logout",null,managerCsrf),200);
+    }
+
+    private void assertAuditCount(Connection connection, String module, String action, long target, int expected) throws SQLException {
+        try (PreparedStatement select = connection.prepareStatement("SELECT COUNT(*) FROM sys_operation_log WHERE module=? AND action=? AND target_id=? AND result='SUCCESS' AND request_id='ssm-external-http'")) {
+            select.setString(1,module); select.setString(2,action); select.setLong(3,target);
+            try (ResultSet rows = select.executeQuery()) { assertThat(rows.next()).isTrue(); assertThat(rows.getInt(1)).isEqualTo(expected); }
+        }
     }
 }
