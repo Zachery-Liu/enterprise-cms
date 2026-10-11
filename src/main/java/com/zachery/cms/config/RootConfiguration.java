@@ -14,7 +14,10 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
             @ComponentScan.Filter(Controller.class), @ComponentScan.Filter(ControllerAdvice.class),
             @ComponentScan.Filter(Configuration.class)
         })
-@Import(PersistenceConfiguration.class)
+@Import({PersistenceConfiguration.class,
+        com.zachery.cms.logging.service.OperationLogWriter.class,
+        com.zachery.cms.logging.service.OperationLogRecorder.class,
+        com.zachery.cms.logging.aspect.OperationLogAspect.class})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public class RootConfiguration {
     @Bean public static PropertySourcesPlaceholderConfigurer propertyPlaceholders() { return new PropertySourcesPlaceholderConfigurer(); }

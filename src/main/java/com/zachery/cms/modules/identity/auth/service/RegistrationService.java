@@ -1,6 +1,7 @@
 package com.zachery.cms.modules.identity.auth.service;
 
 import com.zachery.cms.common.exception.*;
+import com.zachery.cms.logging.annotation.OperationLog;
 import com.zachery.cms.modules.identity.auth.dto.*;
 import com.zachery.cms.modules.identity.persistence.entity.*;
 import com.zachery.cms.modules.identity.persistence.mapper.*;
@@ -32,6 +33,7 @@ public class RegistrationService {
     }
 
     @Transactional
+    @OperationLog(module="AUTH", action="REGISTER", targetType="USER", targetIdExpression="#result.id")
     public RegisteredUser register(@Valid RegisterRequest request) {
         // Hash before acquiring the shared default-role row lock.
         String hash = passwords.encode(request.password());
