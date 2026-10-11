@@ -6,7 +6,7 @@
 | 编制日期 | 2026-09-15 |
 | 修订日期 | 2026-10-11 |
 | 负责人 | B |
-| 建议分支 | 业务基线 `feature/security`；迁移 `feat/security-ssm`；B-14 `feat/security-aop`；B-15 `feat/operation-log` |
+| 建议分支 | 业务基线 `feature/security`；迁移 `feat/security-ssm`；B-14 `feat/security-aop`；B-15 `feat/operation-log`；B-16 `feat/operation-log-query` |
 | 模块范围 | 用户认证、角色权限、Spring AOP、操作日志、统一响应异常 |
 | 任务数量 | 原业务任务 20 个，新增 SSM 迁移任务 6 个 |
 
@@ -16,7 +16,7 @@
 
 ### 1.1 本轮远端基线与完成状态
 
-2026-10-08 基线检查：`origin/feature/security@dff0cca` 已有 B-04～B-10、B-12/B-13 实现；B-03 整体验收还有 A SQL 的已知阻塞。2026-10-11 更新：B-14 权限切面、B-15 日志及 B 接口接入已实现，临时 `PermissionQueryGuard` 已移除；真实 A 接口联调待完成，B-11、B-16～B-20 尚未整体完成。MySQL 专项结果见新验证记录，ApiFox 人工点测及 A 接入未冒充完成。
+2026-10-08 基线检查：`origin/feature/security@dff0cca` 已有 B-04～B-10、B-12/B-13 实现；B-03 整体验收还有 A SQL 的已知阻塞。2026-10-11 更新：B-14 权限切面、B-15 日志及 B 接口接入、B-16 只读日志查询已实现，临时 `PermissionQueryGuard` 已移除；真实 A 接口联调待完成，B-11、B-17～B-20 尚未整体完成。MySQL 专项结果见新验证记录，ApiFox 人工点测及 A 接入未冒充完成。
 
 原任务中的日期、勾选和完成状态保留为历史记录；不能据此认定传统 SSM 迁移已完成。2026-10-09 已完成 B-M01～B-M05：JDK 17 常规测试 112 项、MySQL 8.0 专项 18 项及外部 Tomcat HTTP 场景 1 项通过；B-M06 文档和配置已交付，A-M00 联合验收待 A 执行。详见[迁移验证记录](../verification/BM01-BM06传统SSM迁移验证记录.md)。以远端 Session/CSRF 拦截器为迁移对象，不混入本地未提交的替代实现。A 按[A 逐项清单](A模块逐项任务清单.md)重新开发内容模块。
 
@@ -519,17 +519,19 @@ B 的既有业务保留，优先迁移配置和测试；B-11、B-16、B-17 在�
 
 **工作内容：**
 
-- [ ] 实现日志分页查询。
-- [ ] 支持操作者、模块、动作、结果和时间范围筛选。
-- [ ] 默认按操作时间和 ID 倒序。
-- [ ] 接入 `cms:log:read`。
-- [ ] 不提供普通修改或删除日志接口。
+- [x] 实现日志分页查询。
+- [x] 支持操作者、模块、动作、结果和时间范围筛选。
+- [x] 默认按操作时间和 ID 倒序。
+- [x] 接入 `cms:log:read`。
+- [x] 不提供普通修改或删除日志接口。
 
 **产物：** 日志查询接口和 ApiFox 用例。
 
 **验收：** 管理员可以组合查询，普通用户返回 403，空结果返回空集合。
 
 **建议提交：** `feat(logging): add operation log queries`
+
+**状态（2026-10-11）：** B-16 接口、接入文档与可导入 ApiFox 的 18 请求集合已完成。155 项常规测试、12 项真实 MySQL 查询测试及外部 Tomcat HTTP 连续场景通过；人工 ApiFox 执行及管理页面不在本次自动化完成声明中。见[B-16 接口](../api/B16操作日志查询.md)与[验证记录](../verification/B16操作日志查询验证记录.md)。
 
 ### B-17 完成 MyBatis-Plus 应用和 N+1 优化
 
