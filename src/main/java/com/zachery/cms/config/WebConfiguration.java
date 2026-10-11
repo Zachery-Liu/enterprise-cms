@@ -3,6 +3,7 @@ package com.zachery.cms.config;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zachery.cms.security.csrf.CsrfConfiguration;
+import com.zachery.cms.security.aspect.PermissionAspect;
 import com.zachery.cms.security.session.SessionAuthenticationConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -19,7 +20,7 @@ import java.util.*;
 @ComponentScan(basePackages = "com.zachery.cms", useDefaultFilters = false,
         includeFilters = {@ComponentScan.Filter(Controller.class), @ComponentScan.Filter(ControllerAdvice.class)},
         excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Test\\$.*"))
-@Import({CsrfConfiguration.class, SessionAuthenticationConfiguration.class})
+@Import({CsrfConfiguration.class, SessionAuthenticationConfiguration.class, PermissionAspect.class})
 public class WebConfiguration implements WebMvcConfigurer {
     private final Validator validator;
     public WebConfiguration(Validator validator) { this.validator = validator; }

@@ -11,7 +11,7 @@
 
 ## 1 技术与命名基线
 
-2026-10-09 迁移实现已在 `feat/security-ssm` 的代码提交 `420fa8f` 完成并验证。业务契约沿用本文，具体容器、Mapper/XML、分页和外部部署约定见[部署与 A 接入说明](../deployment/传统SSM部署与A接入.md)，结果见[迁移验证记录](../verification/BM01-BM06传统SSM迁移验证记录.md)。A-M00 联合验收以及 B-14/B-15 业务实现仍待完成。
+2026-10-09 迁移实现已在 `feat/security-ssm` 的代码提交 `420fa8f` 完成并验证。业务契约沿用本文，具体容器、Mapper/XML、分页和外部部署约定见[部署与 A 接入说明](../deployment/传统SSM部署与A接入.md)，结果见[迁移验证记录](../verification/BM01-BM06传统SSM迁移验证记录.md)。2026-10-11 的 `feat/security-aop` 已实现 B-14 权限注解与切面；A-M00 联合验收、B-14 真实 A 接口联调及 B-15 仍待完成。
 
 | 项目 | 约定 |
 | --- | --- |
@@ -249,6 +249,8 @@ public @interface RequirePermission {
 ```
 
 当前阶段每个方法声明一个核心权限。需要多个权限的复杂表达式不进入课程 MVP。
+
+2026-10-11 已实现本文注解，当前支持 MVC 容器中由 Spring 管理的 Controller 的 public、非 final 实现方法。`PermissionAspect` 显式注册于 MVC 子容器，使用 B-10 的请求内有效权限快照；ADMIN 不绕过权限检查。不把注解单独放在根容器 Service、接口声明或同类内部调用上作为安全边界。详细示例、匿名白名单及代理限制见[B-14 接入说明](../api/B14权限注解接入.md)。
 
 权限切面顺序：
 
