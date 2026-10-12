@@ -22,7 +22,7 @@ mvn dependency:tree
 
 Windows 可使用 `scripts/build.ps1`，它将临时目录和 Maven 缓存放在项目内，不固定盘符。B 本机将项目放 E 盘，所以相关文件也落在 E 盘。仓库脚本使用 `scripts/settings.xml`；需要代理/镜像时，可使用个人 Maven settings 执行 Maven，不要提交个人凭证。
 
-成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 176 项自动测试（B-11 基线 170 项 + B-17 新增 6 项），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。B-11、B-16 无新增 SQL 迁移，接口见[用户管理](../api/B11用户管理.md)与[日志查询](../api/B16操作日志查询.md)。
+成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 177 项自动测试（B-17 基线 176 项 + 联调准备新增 1 项代理内部调用风险测试），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。B-11、B-16 无新增 SQL 迁移，接口见[用户管理](../api/B11用户管理.md)与[日志查询](../api/B16操作日志查询.md)。
 
 ## 2 数据库
 
