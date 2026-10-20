@@ -31,6 +31,9 @@ public class WebConfiguration implements WebMvcConfigurer {
                 .setTimeZone(TimeZone.getTimeZone("UTC"));
     }
     @Override public Validator getValidator() { return validator; }
+    @Override public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/content/**").addResourceLocations("/content/");
+    }
     @Override public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         for (HttpMessageConverter<?> converter : converters)
             if (converter instanceof MappingJackson2HttpMessageConverter jackson) jackson.setObjectMapper(objectMapper());
