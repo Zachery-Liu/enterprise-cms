@@ -7,6 +7,13 @@ $env:TMP = $env:TEMP
 $env:MAVEN_OPTS = "-Djava.io.tmpdir=$($env:TEMP) -XX:-UsePerfData"
 Push-Location $projectRoot
 try {
+  Push-Location "$projectRoot\frontend"
+  try {
+    & npm.cmd ci --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw '前端依赖安装失败。' }
+    & npm.cmd run build
+    if ($LASTEXITCODE -ne 0) { throw '前端构建失败。' }
+  } finally { Pop-Location }
   $mavenArgs = @('-B','-ntp','-gs',"$projectRoot\scripts\settings.xml",'-s',"$projectRoot\scripts\settings.xml","-Dmaven.repo.local=$projectRoot\.cache\m2",'clean','verify')
   if ($SkipTests) { $mavenArgs += '-DskipTests' }
   & mvn @mavenArgs
