@@ -1,0 +1,137 @@
+{
+  "apifoxCli": "1.1",
+  "name": "A existing session disabled",
+  "info": {
+    "name": "A existing session disabled",
+    "description": "Local CMS acceptance scenario; supply disposable test variables with --variables. No cloud project export is claimed."
+  },
+  "item": [
+    {
+      "id": "cms-content",
+      "name": "A existing session disabled",
+      "item": [
+        {
+          "id": "cms-step-1",
+          "name": "A-HTTP-14 disabled existing session",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "Cookie",
+                "value": "{{publisherCookie}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-14 disabled existing session: status\", function () { pm.expect(pm.response.code).to.eql(401); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "id": 1,
+    "name": "Dedicated local CMS",
+    "variable": {
+      "values": [
+        {
+          "key": "baseUrl",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "requestId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "runName",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "adminUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "adminPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "editorUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "editorPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "reviewerUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "reviewerPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "fixtureArticleId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherCookie",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherCsrf",
+          "value": "",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "globals": {
+    "variable": {
+      "values": []
+    }
+  },
+  "reportExtra": {},
+  "dataSchemas": {},
+  "projectOptions": {
+    "responseValidateApiTest": false
+  }
+}

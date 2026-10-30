@@ -1,0 +1,3398 @@
+{
+  "apifoxCli": "1.1",
+  "name": "A content lifecycle and boundary acceptance",
+  "info": {
+    "name": "A content lifecycle and boundary acceptance",
+    "description": "Local CMS acceptance scenario; supply disposable test variables with --variables. No cloud project export is claimed."
+  },
+  "item": [
+    {
+      "id": "cms-content",
+      "name": "A content lifecycle and boundary acceptance",
+      "item": [
+        {
+          "id": "cms-step-1",
+          "name": "A-HTTP-01 anonymous backend denied",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-01 anonymous backend denied: status\", function () { pm.expect(pm.response.code).to.eql(401); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-2",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-3",
+          "name": "Login admin",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{adminUser}}\", \"password\": \"{{adminPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login admin: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-4",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-5",
+          "name": "Current user admin",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user admin: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('adminId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-6",
+          "name": "Create category",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/categories",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"{{runName}}\", \"sortOrder\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Create category: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('categoryId',pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-7",
+          "name": "A-HTTP-08 create a draft for invalid publication",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"draft-{{runName}}\", \"content\": \"body\", \"categoryId\": {{categoryId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-08 create a draft for invalid publication: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);pm.environment.set('draftProbeId',pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-8",
+          "name": "A-HTTP-08 draft cannot publish directly",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/publish",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-08 draft cannot publish directly: status\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-9",
+          "name": "A-HTTP-09 draft is not public",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-09 draft is not public: status\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-10",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-11",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-12",
+          "name": "Login editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{editorUser}}\", \"password\": \"{{editorPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-13",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-14",
+          "name": "Current user editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('editorId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-15",
+          "name": "A-HTTP-04 invalid page size",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles?size=101",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-04 invalid page size: status\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-16",
+          "name": "A-HTTP-05 sort injection rejected",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles?sort=updatedAt%3BDROP%20TABLE",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-05 sort injection rejected: status\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-17",
+          "name": "A-HTTP-03 missing CSRF",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"{{runName}}\", \"content\": \"<p onclick='bad()'>body<script>bad()</script><a href='javascript:bad()'>link</a></p>\", \"categoryId\": {{categoryId}}, \"authorId\": 1, \"status\": \"PUBLISHED\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-03 missing CSRF: status\", function () { pm.expect(pm.response.code).to.eql(403); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-18",
+          "name": "A-HTTP-15 sanitized server-owned draft",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"{{runName}}\", \"content\": \"<p onclick='bad()'>body<script>bad()</script><a href='javascript:bad()'>link</a></p>\", \"categoryId\": {{categoryId}}, \"authorId\": 1, \"status\": \"PUBLISHED\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-15 sanitized server-owned draft: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);pm.test('server identity and clean body',function(){const d=pm.response.json().data;pm.expect(d.authorId).to.eql(Number(pm.environment.get('editorId')));pm.expect(d.status).to.eql('DRAFT');pm.expect(d.content).to.include('body');pm.expect(d.content).not.to.include('<script');pm.expect(d.content).not.to.include('onclick');pm.expect(d.content).not.to.include('javascript:');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-19",
+          "name": "Edit draft",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"edited-{{runName}}\", \"content\": \"body\", \"categoryId\": {{categoryId}}, \"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Edit draft: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-20",
+          "name": "A-HTTP-06 stale update",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"stale\", \"content\": \"body\", \"categoryId\": {{categoryId}}, \"version\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-06 stale update: status\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-21",
+          "name": "submit",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/submit",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"submit: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-22",
+          "name": "A-HTTP-02 editor cannot approve",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/approve",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-02 editor cannot approve: status\", function () { pm.expect(pm.response.code).to.eql(403); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-23",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-24",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-25",
+          "name": "Login reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reviewerUser}}\", \"password\": \"{{reviewerPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-26",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-27",
+          "name": "Current user reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('reviewerId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-28",
+          "name": "A-HTTP-07 blank rejection reason",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/reject",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}, \"comment\": \" \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-07 blank rejection reason: status\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-29",
+          "name": "reject",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/reject",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}, \"comment\": \"revise\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"reject: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-30",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-31",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-32",
+          "name": "Login editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{editorUser}}\", \"password\": \"{{editorPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-33",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-34",
+          "name": "Current user editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('editorId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-35",
+          "name": "Revise rejected content",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"revised-{{runName}}\", \"content\": \"<p>revised</p>\", \"categoryId\": {{categoryId}}, \"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Revise rejected content: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-36",
+          "name": "submit",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/submit",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"submit: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-37",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-38",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-39",
+          "name": "Login reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reviewerUser}}\", \"password\": \"{{reviewerPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-40",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-41",
+          "name": "Current user reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('reviewerId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-42",
+          "name": "Review queue",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles/review-queue?categoryId={{categoryId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Review queue: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('one pending article',function(){pm.expect(pm.response.json().data.total).to.eql(1);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-43",
+          "name": "approve",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/approve",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"approve: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-44",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-45",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-46",
+          "name": "Login publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{publisherUser}}\", \"password\": \"{{publisherPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-47",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-48",
+          "name": "Current user publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('publisherId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-49",
+          "name": "publish",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/publish",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"publish: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-50",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-51",
+          "name": "Anonymous published detail",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Anonymous published detail: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('safe public projection',function(){const d=pm.response.json().data;pm.expect(d.content).to.eql('<p>revised</p>');pm.expect(d).not.to.have.property('reviewerId');});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-52",
+          "name": "Anonymous published list",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/articles?categoryId={{categoryId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Anonymous published list: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('one public article',function(){pm.expect(pm.response.json().data.total).to.eql(1);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-53",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-54",
+          "name": "Login publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{publisherUser}}\", \"password\": \"{{publisherPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-55",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-56",
+          "name": "Current user publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('publisherId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-57",
+          "name": "offline",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/offline",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"offline: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-58",
+          "name": "A-HTTP-10 offline detail hidden",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/public/articles/{{articleId}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-10 offline detail hidden: status\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-59",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-60",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-61",
+          "name": "Login editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{editorUser}}\", \"password\": \"{{editorPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-62",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-63",
+          "name": "Current user editor",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user editor: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('editorId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-64",
+          "name": "reopen",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/reopen",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": {{version}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"reopen: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "const d=pm.response.json().data; pm.environment.set('articleId',d.id); pm.environment.set('version',d.version);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-65",
+          "name": "Full history",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles/{{articleId}}/history",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Full history: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('eight lifecycle events',function(){pm.expect(pm.response.json().data.total).to.eql(8);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-66",
+          "name": "Create batch article 1",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"batch1-{{runName}}\", \"content\": \"body\", \"categoryId\": {{categoryId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Create batch article 1: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('batch1',pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-67",
+          "name": "Submit batch article 1",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{batch1}}/submit",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Submit batch article 1: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-68",
+          "name": "Create batch article 2",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"batch2-{{runName}}\", \"content\": \"body\", \"categoryId\": {{categoryId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Create batch article 2: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('batch2',pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-69",
+          "name": "Submit batch article 2",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{batch2}}/submit",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Submit batch article 2: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-70",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-71",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-72",
+          "name": "Login reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{reviewerUser}}\", \"password\": \"{{reviewerPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-73",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-74",
+          "name": "Current user reviewer",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user reviewer: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('reviewerId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-75",
+          "name": "Approve batch article 1",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{batch1}}/approve",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Approve batch article 1: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-76",
+          "name": "Approve batch article 2",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/{{batch2}}/approve",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"version\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Approve batch article 2: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-77",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-78",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-79",
+          "name": "Login publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"{{publisherUser}}\", \"password\": \"{{publisherPassword}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-80",
+          "name": "CSRF token",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/csrf-token",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSRF token: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('csrf', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-81",
+          "name": "Current user publisher",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/auth/me",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user publisher: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.environment.set('publisherId', pm.response.json().data.userId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-82",
+          "name": "A-HTTP-11 duplicate batch IDs",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/batch-publish",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"items\": [{\"id\": {{batch1}}, \"version\": 2}, {\"id\": {{batch1}}, \"version\": 2}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-11 duplicate batch IDs: status\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-83",
+          "name": "A-HTTP-12 draft item rejects the complete batch",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/batch-publish",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"items\": [{\"id\": {{batch1}}, \"version\": 2}, {\"id\": {{draftProbeId}}, \"version\": 0}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-12 draft item rejects the complete batch: status\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-84",
+          "name": "Batch row remains approved 1",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles/{{batch1}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Batch row remains approved 1: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('no partial commit',function(){pm.expect(pm.response.json().data.status).to.eql('APPROVED');pm.expect(pm.response.json().data.version).to.eql(2);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-85",
+          "name": "Batch row remains approved 2",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/articles/{{batch2}}",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Batch row remains approved 2: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('no partial commit',function(){pm.expect(pm.response.json().data.status).to.eql('APPROVED');pm.expect(pm.response.json().data.version).to.eql(2);});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-86",
+          "name": "A-HTTP-16 publish complete batch",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/articles/batch-publish",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"items\": [{\"id\": {{batch2}}, \"version\": 2}, {\"id\": {{batch1}}, \"version\": 2}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"A-HTTP-16 publish complete batch: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });",
+                  "pm.test('two results in request order',function(){const d=pm.response.json().data;pm.expect(d.count).to.eql(2);pm.expect(d.items[0].id).to.eql(Number(pm.environment.get('batch2')));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "cms-step-87",
+          "name": "Logout",
+          "metaInfo": {
+            "type": "http"
+          },
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/logout",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "{{requestId}}"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrf}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout: status\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test('requestId', function () { pm.expect(pm.response.json().requestId).to.eql(pm.environment.get('requestId')); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "id": 1,
+    "name": "Dedicated local CMS",
+    "variable": {
+      "values": [
+        {
+          "key": "baseUrl",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "requestId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "runName",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "adminUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "adminPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "editorUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "editorPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "reviewerUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "reviewerPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherUser",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherPassword",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "fixtureArticleId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherCookie",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "publisherCsrf",
+          "value": "",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "globals": {
+    "variable": {
+      "values": []
+    }
+  },
+  "reportExtra": {},
+  "dataSchemas": {},
+  "projectOptions": {
+    "responseValidateApiTest": false
+  }
+}
