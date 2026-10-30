@@ -1,0 +1,149 @@
+{
+  "status": "ready-for-execution",
+  "cases": [
+    {
+      "id": "A-HTTP-01",
+      "name": "匿名后台拒绝",
+      "method": "GET",
+      "path": "/api/articles",
+      "expectedStatus": 401,
+      "setup": "清空 Cookie",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-02",
+      "name": "编辑越权审核",
+      "method": "POST",
+      "path": "/api/articles/{id}/approve",
+      "expectedStatus": 403,
+      "setup": "编辑角色、有效 CSRF、PENDING 文章",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-03",
+      "name": "缺少CSRF",
+      "method": "POST",
+      "path": "/api/articles",
+      "expectedStatus": 403,
+      "setup": "登录后删除 X-CSRF-Token",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-04",
+      "name": "非法分页",
+      "method": "GET",
+      "path": "/api/articles",
+      "expectedStatus": 400,
+      "setup": "size=101",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-05",
+      "name": "排序注入拒绝",
+      "method": "GET",
+      "path": "/api/articles",
+      "expectedStatus": 400,
+      "setup": "sort=title;DROP TABLE cms_article",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-06",
+      "name": "旧版本覆盖",
+      "method": "PUT",
+      "path": "/api/articles/{id}",
+      "expectedStatus": 409,
+      "setup": "先保存，再使用旧 version",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-07",
+      "name": "退回原因空白",
+      "method": "POST",
+      "path": "/api/articles/{id}/reject",
+      "expectedStatus": 400,
+      "setup": "PENDING，comment=空白",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-08",
+      "name": "草稿直接发布",
+      "method": "POST",
+      "path": "/api/articles/{id}/publish",
+      "expectedStatus": 409,
+      "setup": "DRAFT",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-09",
+      "name": "公开草稿隐藏",
+      "method": "GET",
+      "path": "/api/public/articles/{id}",
+      "expectedStatus": 404,
+      "setup": "DRAFT",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-10",
+      "name": "公开下架隐藏",
+      "method": "GET",
+      "path": "/api/public/articles/{id}",
+      "expectedStatus": 404,
+      "setup": "成功下架后",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-11",
+      "name": "批量重复ID",
+      "method": "POST",
+      "path": "/api/articles/batch-publish",
+      "expectedStatus": 400,
+      "setup": "同 id 不同 version 也拒绝",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-12",
+      "name": "批量整批冲突",
+      "method": "POST",
+      "path": "/api/articles/batch-publish",
+      "expectedStatus": 409,
+      "setup": "APPROVED 中混入 DRAFT；另查所有文章和历史均未变化",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-13",
+      "name": "权限撤销生效",
+      "method": "POST",
+      "path": "/api/articles/{id}/publish",
+      "expectedStatus": 403,
+      "setup": "B 侧撤销发布权限后沿用旧 Session 和有效 CSRF",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-14",
+      "name": "账号停用失效",
+      "method": "GET",
+      "path": "/api/articles",
+      "expectedStatus": 401,
+      "setup": "B 侧停用当前登录账号",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-15",
+      "name": "正文清洗",
+      "method": "POST",
+      "path": "/api/articles",
+      "expectedStatus": 200,
+      "setup": "content 含可见文本、script、事件和危险链接；再查询安全正文",
+      "status": "defined"
+    },
+    {
+      "id": "A-HTTP-16",
+      "name": "批量成功",
+      "method": "POST",
+      "path": "/api/articles/batch-publish",
+      "expectedStatus": 200,
+      "setup": "1～50 条 APPROVED，携带各自当前 version，检查发布时间/历史/通用日志",
+      "status": "defined"
+    }
+  ]
+}
