@@ -23,3 +23,8 @@ Thumbs.db
 
 # Local document review artifacts
 .codex-docx-review/
+
+# B module local data and cache
+runtime/
+.cache/
+.env
