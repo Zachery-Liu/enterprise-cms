@@ -15,6 +15,8 @@ public final class RequestContext {
         return id == null ? UUID.randomUUID().toString() : id;
     }
 
+    static String currentId() { return ID.get(); }
+
     static void set(String id) { ID.set(id); }
     public static void clear() { ID.remove(); }
 }

@@ -16,6 +16,26 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    // Compatibility entry points for callers of the original common contract.
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException e) {
+        return ResponseEntity.status(e.getHttpStatus()).body(ApiResponse.failure(e.getCode(), e.getMessage()));
+    }
+    public ResponseEntity<ApiResponse<ValidationErrorData>> handleFieldValidation(Exception e) {
+        org.springframework.validation.BindingResult result = e instanceof MethodArgumentNotValidException v
+                ? v.getBindingResult() : ((org.springframework.validation.BindException) e).getBindingResult();
+        var errors = result.getFieldErrors().stream().map(f -> new FieldViolation(f.getField(), f.getDefaultMessage()))
+                .sorted(java.util.Comparator.comparing(FieldViolation::field).thenComparing(FieldViolation::message)).toList();
+        return ResponseEntity.badRequest().body(ApiResponse.failure(ErrorCode.COMMON_VALIDATION_ERROR.name(),
+                ErrorCode.COMMON_VALIDATION_ERROR.getMessage(), new ValidationErrorData(errors)));
+    }
+    public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception e) {
+        logType(e);
+        return ResponseEntity.status(500).body(ApiResponse.failure(ErrorCode.COMMON_INTERNAL_ERROR.name(), ErrorCode.COMMON_INTERNAL_ERROR.getMessage()));
+    }
+    public ResponseEntity<ApiResponse<Void>> handleNotFound(org.springframework.web.servlet.resource.NoResourceFoundException e) {
+        return ResponseEntity.status(404).body(ApiResponse.failure(ErrorCode.COMMON_NOT_FOUND.name(), ErrorCode.COMMON_NOT_FOUND.getMessage()));
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> business(BusinessException exception) {
         Object data = exception instanceof RequestValidationException validation ? validation.getData() : null;

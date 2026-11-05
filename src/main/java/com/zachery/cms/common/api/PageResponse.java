@@ -10,6 +10,10 @@ public record PageResponse<T>(List<T> records, long total, long page, long size)
         if (total < 0) throw new IllegalArgumentException("total must not be negative");
     }
 
+    public static <T> PageResponse<T> of(List<T> records, long total, long page, long size) {
+        return new PageResponse<>(records == null ? List.of() : records, total, page, size);
+    }
+
     public static <T> PageResponse<T> empty(long page, long size) {
         return new PageResponse<>(List.of(), 0, page, size);
     }
