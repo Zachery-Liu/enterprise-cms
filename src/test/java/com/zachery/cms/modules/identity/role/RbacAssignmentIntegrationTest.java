@@ -10,8 +10,6 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.*;
 import org.springframework.context.annotation.*;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -27,14 +25,13 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties = {
-        "spring.main.web-application-type=servlet",
-        "spring.datasource.url=jdbc:h2:mem:b13_assignments;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000"
-})
+@org.springframework.test.context.TestPropertySource(properties = "cms.db.url=jdbc:h2:mem:rbacassignmentintegrationtest;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000")
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
-@Import(RbacAssignmentIntegrationTest.ProbeConfiguration.class)
-class RbacAssignmentIntegrationTest {
+@org.springframework.test.context.ContextHierarchy({
+    @org.springframework.test.context.ContextConfiguration(name = "root", classes = {com.zachery.cms.config.RootConfiguration.class, com.zachery.cms.support.TestDatabaseConfiguration.class, RbacAssignmentIntegrationTest.ProbeConfiguration.class}),
+    @org.springframework.test.context.ContextConfiguration(name = "web", classes = {com.zachery.cms.config.WebConfiguration.class, com.zachery.cms.support.MockMvcConfiguration.class})
+})
+class RbacAssignmentIntegrationTest extends com.zachery.cms.support.SpringWebIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired ObjectMapper json;
@@ -295,7 +292,7 @@ class RbacAssignmentIntegrationTest {
         } finally { pool.shutdownNow(); }
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
+    @Configuration(proxyBeanMethods = false)
     static class ProbeConfiguration { @Bean MutationProbe mutationProbe() { return new MutationProbe(); } }
     @Intercepts({
             @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),

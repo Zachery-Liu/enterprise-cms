@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -25,9 +24,12 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest
-@ContextConfiguration(classes = CommonWebContractTest.TestConfig.class)
-class CommonWebContractTest {
+@org.springframework.test.context.TestPropertySource(properties = "cms.db.url=jdbc:h2:mem:common_web;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1")
+@org.springframework.test.context.ContextHierarchy({
+    @org.springframework.test.context.ContextConfiguration(name = "root", classes = {com.zachery.cms.config.RootConfiguration.class, com.zachery.cms.support.TestDatabaseConfiguration.class}),
+    @org.springframework.test.context.ContextConfiguration(name = "web", classes = {com.zachery.cms.config.WebConfiguration.class, com.zachery.cms.support.MockMvcConfiguration.class, CommonWebContractTest.TestConfig.class})
+})
+class CommonWebContractTest extends com.zachery.cms.support.SpringWebIntegrationTest {
     @Configuration(proxyBeanMethods = false)
     @Import({ProbeController.class, GlobalExceptionHandler.class, RequestIdFilter.class})
     static class TestConfig {}
