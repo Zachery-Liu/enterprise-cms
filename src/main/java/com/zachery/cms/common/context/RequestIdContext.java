@@ -7,12 +7,12 @@ public final class RequestIdContext {
     public static final String HEADER_NAME = "X-Request-Id";
     public static final String MDC_KEY = "requestId";
 
-    private static final ThreadLocal<String> REQUEST_ID = new ThreadLocal<>();
+
 
     private RequestIdContext() {}
 
     public static String getRequestId() {
-        return REQUEST_ID.get();
+        return RequestContext.currentId();
     }
 
     public static void setRequestId(String requestId) {
@@ -20,12 +20,12 @@ public final class RequestIdContext {
             clear();
             return;
         }
-        REQUEST_ID.set(requestId);
+        RequestContext.set(requestId);
         MDC.put(MDC_KEY, requestId);
     }
 
     public static void clear() {
-        REQUEST_ID.remove();
+        RequestContext.clear();
         MDC.remove(MDC_KEY);
     }
 }

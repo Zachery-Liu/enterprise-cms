@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zachery.cms.modules.identity.persistence.mapper.RbacAssignmentMapper">
+    <resultMap id="target" type="com.zachery.cms.modules.identity.persistence.projection.AssignmentTarget">
+        <constructor>
+            <idArg column="id" javaType="java.lang.Long"/>
+            <arg column="status" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+    <!-- Both assignment transactions acquire this same existing row first. No new lock table is needed. -->
+    <!-- Flush the transaction's first-level query cache before waiting: pre-lock permission reads may be stale. -->
+    <select id="lockManagementPermission" resultType="java.lang.Long" flushCache="true" useCache="false">
+        SELECT id FROM sys_permission WHERE code = 'cms:role:assign' FOR UPDATE
+    </select>
+    <select id="lockUser" resultMap="target" flushCache="true" useCache="false">
+        SELECT id, status FROM sys_user WHERE id = #{id} AND deleted = 0 FOR UPDATE
+    </select>
+    <select id="lockRole" resultMap="target" flushCache="true" useCache="false">
+        SELECT id, status FROM sys_role WHERE id = #{id} AND deleted = 0 FOR UPDATE
+    </select>
+    <select id="lockEnabledRoles" resultType="java.lang.Long" flushCache="true" useCache="false">
+        SELECT id FROM sys_role WHERE deleted = 0 AND status = 'ENABLED'
+        <choose>
+            <when test="ids != null and ids.size() > 0">
+                AND id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND 1 = 0</otherwise>
+        </choose>
+        ORDER BY id FOR UPDATE
+    </select>
+    <select id="lockEnabledPermissions" resultType="java.lang.Long" flushCache="true" useCache="false">
+        SELECT id FROM sys_permission WHERE deleted = 0 AND status = 'ENABLED'
+        <choose>
+            <when test="ids != null and ids.size() > 0">
+                AND id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </when>
+            <otherwise>AND 1 = 0</otherwise>
+        </choose>
+        ORDER BY id FOR UPDATE
+    </select>
+    <delete id="deleteUserRoles">DELETE FROM sys_user_role WHERE user_id = #{id}</delete>
+    <delete id="deleteRolePermissions">DELETE FROM sys_role_permission WHERE role_id = #{id}</delete>
+    <insert id="insertUserRoles">
+        INSERT INTO sys_user_role(user_id, role_id, created_by) VALUES
+        <foreach collection="ids" item="roleId" separator=",">(#{id}, #{roleId}, #{actorId})</foreach>
+    </insert>
+    <insert id="insertRolePermissions">
+        INSERT INTO sys_role_permission(role_id, permission_id, created_by) VALUES
+        <foreach collection="ids" item="permissionId" separator=",">(#{id}, #{permissionId}, #{actorId})</foreach>
+    </insert>
+    <select id="hasRbacAdministrator" resultType="boolean">
+        SELECT EXISTS (
+            SELECT u.id FROM sys_user u
+            JOIN sys_user_role ur ON ur.user_id = u.id
+            JOIN sys_role r ON r.id = ur.role_id
+            JOIN sys_role_permission rp ON rp.role_id = r.id
+            JOIN sys_permission p ON p.id = rp.permission_id
+            WHERE u.deleted = 0 AND u.status = 'ACTIVE'
+              AND r.deleted = 0 AND r.status = 'ENABLED'
+              AND p.deleted = 0 AND p.status = 'ENABLED'
+              AND p.code IN ('cms:role:assign', 'cms:permission:manage')
+            GROUP BY u.id HAVING COUNT(DISTINCT p.code) = 2
+        )
+    </select>
+</mapper>
