@@ -18,10 +18,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.transaction.annotation.RollbackOn;
 import javax.sql.DataSource;
 
 @Configuration(proxyBeanMethods = false)
-@EnableTransactionManagement(proxyTargetClass = true)
+@EnableTransactionManagement(proxyTargetClass = true, order = 0, rollbackOn = RollbackOn.ALL_EXCEPTIONS)
 @MapperScan({"com.zachery.cms.modules.identity.persistence.mapper", "com.zachery.cms.modules.content.persistence.mapper"})
 public class PersistenceConfiguration {
     @Bean(destroyMethod = "close") public HikariDataSource dataSource(Environment env) {

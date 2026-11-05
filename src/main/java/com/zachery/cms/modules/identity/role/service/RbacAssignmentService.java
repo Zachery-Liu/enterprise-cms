@@ -1,6 +1,7 @@
 package com.zachery.cms.modules.identity.role.service;
 
 import com.zachery.cms.common.context.CurrentUserContext;
+import com.zachery.cms.logging.annotation.OperationLog;
 import com.zachery.cms.common.exception.*;
 import com.zachery.cms.common.validation.RequestValidation;
 import com.zachery.cms.modules.identity.persistence.mapper.*;
@@ -24,6 +25,7 @@ public class RbacAssignmentService {
         this.users = users;
     }
 
+    @OperationLog(module="USER", action="ASSIGN_ROLES", targetType="USER", targetIdExpression="#userId")
     public void setUserRoles(long userId, Collection<Long> roleIds) {
         long actorId = authorize("cms:role:assign");
         positiveId(userId, "userId");
@@ -36,6 +38,7 @@ public class RbacAssignmentService {
         requireAdministrator();
     }
 
+    @OperationLog(module="ROLE", action="ASSIGN_PERMISSIONS", targetType="ROLE", targetIdExpression="#roleId")
     public void setRolePermissions(long roleId, Collection<Long> permissionIds) {
         long actorId = authorize("cms:permission:manage");
         positiveId(roleId, "roleId");

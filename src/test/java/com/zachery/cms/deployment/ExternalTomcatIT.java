@@ -47,6 +47,7 @@ class ExternalTomcatIT {
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0,12);
         String username = "http_"+suffix, password = "FixturePass123!";
         HttpClient user = client(), manager = client();
+        data(request(client(),"GET","/api/operation-logs",null,null),401);
         var csrfResponse = request(user,"GET","/api/auth/csrf-token",null,null);
         String csrf = data(csrfResponse,200).path("token").asText();
         String anonymousCookie = csrfResponse.headers().firstValue("set-cookie").orElseThrow();
@@ -66,6 +67,8 @@ class ExternalTomcatIT {
         staleCookieRejected(anonymousCookie);
         assertThat(data(request(user,"GET","/api/auth/me",null,null),200).path("userId").asLong()).isEqualTo(userId);
         data(request(user,"GET","/api/roles",null,null),403);
+        data(request(user,"GET","/api/operation-logs",null,null),403);
+        data(request(user,"GET","/api/users",null,null),403);
         data(request(user,"POST","/api/auth/logout",null,csrf),403);
 
         String managerCsrf = token(manager);
@@ -92,9 +95,44 @@ class ExternalTomcatIT {
             staleCookieRejected(loginCookie);
             csrf = token(user);
             data(request(user,"POST","/api/auth/login",Map.of("username",username,"password",password),csrf),200);
-            try (PreparedStatement update=connection.prepareStatement("UPDATE sys_user SET status='DISABLED' WHERE id=?")) { update.setLong(1,userId); update.executeUpdate(); }
+            JsonNode accountPage=data(request(manager,"GET","/api/users?username="+username+"&status=ACTIVE",null,null),200);
+            assertThat(accountPage.path("total").asLong()).isEqualTo(1);
+            JsonNode account=accountPage.path("records").get(0);
+            assertThat(account.path("id").asLong()).isEqualTo(userId);
+            assertThat(account.has("passwordHash")).isFalse();
+            assertThat(account.path("roles").size()).isEqualTo(1);
+            assertThat(account.path("roles").get(0).path("id").asLong()).isEqualTo(roleId);
+            assertThat(account.path("roles").get(0).path("code").asText()).isEqualTo("HTTP_"+suffix);
+            int accountVersion=account.path("version").asInt();
+            JsonNode stopped=data(request(manager,"PUT","/api/users/"+userId+"/status",
+                    Map.of("status","DISABLED","version",accountVersion),managerCsrf),200);
+            assertThat(stopped.path("version").asInt()).isEqualTo(accountVersion+1);
             data(request(user,"GET","/api/auth/me",null,null),401);
+            data(request(manager,"PUT","/api/users/"+userId+"/status",
+                    Map.of("status","ACTIVE","version",accountVersion),managerCsrf),409);
+            data(request(manager,"PUT","/api/users/"+userId+"/status",
+                    Map.of("status","ACTIVE","version",accountVersion+1),managerCsrf),200);
+            assertAuditCount(connection, "AUTH", "REGISTER", userId, 1);
+            assertAuditCount(connection, "AUTH", "LOGIN", userId, 2);
+            assertAuditCount(connection, "AUTH", "LOGOUT", userId, 1);
+            assertAuditCount(connection, "USER", "ASSIGN_ROLES", userId, 1);
+            assertAuditCount(connection, "ROLE", "ASSIGN_PERMISSIONS", roleId, 2);
+            assertAuditCount(connection, "USER", "SET_STATUS", userId, 2);
+            JsonNode audit = data(request(manager,"GET","/api/operation-logs?operatorId="+userId
+                    +"&module=AUTH&action=LOGIN&result=SUCCESS&size=1",null,null),200);
+            assertThat(audit.path("total").asLong()).isEqualTo(2);
+            assertThat(audit.path("records").size()).isEqualTo(1);
+            assertThat(audit.path("records").get(0).path("operatorId").asLong()).isEqualTo(userId);
+            assertThat(audit.path("records").get(0).path("createdAt").asText()).endsWith("Z");
+            data(request(manager,"GET","/api/operation-logs?size=101",null,null),400);
         }
         data(request(manager,"POST","/api/auth/logout",null,managerCsrf),200);
+    }
+
+    private void assertAuditCount(Connection connection, String module, String action, long target, int expected) throws SQLException {
+        try (PreparedStatement select = connection.prepareStatement("SELECT COUNT(*) FROM sys_operation_log WHERE module=? AND action=? AND target_id=? AND result='SUCCESS' AND request_id='ssm-external-http'")) {
+            select.setString(1,module); select.setString(2,action); select.setLong(3,target);
+            try (ResultSet rows = select.executeQuery()) { assertThat(rows.next()).isTrue(); assertThat(rows.getInt(1)).isEqualTo(expected); }
+        }
     }
 }

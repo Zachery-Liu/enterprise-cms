@@ -1,6 +1,6 @@
 # 传统 SSM 部署与 A 接入
 
-更新：2026-10-09。迁移基线位于 `feat/security-ssm`；具体提交见本文件所在分支的 Git 历史和迁移验证记录。
+更新：2026-10-12。迁移基线位于 `feat/security-ssm`；B-14 位于 `feat/security-aop`；B-15 位于 `feat/operation-log`；B-16 位于 `feat/operation-log-query`；B-11 分支为 `feat/user-administration`；B-17 分支 `perf/user-role-query@447904c` 包含上述生产成果。`test/integration-readiness@8872274` 和后续 `docs/b-delivery-materials` 补充测试与交付材料；最新入口见[B 阶段交付索引](../delivery/B阶段交付索引.md)。
 
 ## 1 环境与构建
 
@@ -22,7 +22,7 @@ mvn dependency:tree
 
 Windows 可使用 `scripts/build.ps1`，它将临时目录和 Maven 缓存放在项目内，不固定盘符。B 本机将项目放 E 盘，所以相关文件也落在 E 盘。仓库脚本使用 `scripts/settings.xml`；需要代理/镜像时，可使用个人 Maven settings 执行 Maven，不要提交个人凭证。
 
-成功产物：`target/enterprise-cms.war`。普通 `verify` 执行 112 项自动测试，使用独立 H2 数据库；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。
+成功产物：`target/enterprise-cms.war`。本分支普通 `clean verify` 执行 177 项自动测试（B-17 基线 176 项 + 联调准备新增 1 项代理内部调用风险测试），数据库集成测试使用独立 H2；不会连接真实 MySQL。真实 MySQL 与外部 WAR 测试是另外显式执行的 `*IT`，见验证记录。删除或改名 Java 类后要先 clean，避免旧编译文件残留在 WAR。B-11、B-16 无新增 SQL 迁移，接口见[用户管理](../api/B11用户管理.md)与[日志查询](../api/B16操作日志查询.md)。
 
 ## 2 数据库
 
@@ -91,14 +91,16 @@ Session 仅使用 Cookie，默认 30 分钟空闲超时。Cookie 为 HttpOnly、
 | 公开接口 | 方法标注 `@AnonymousAccess`；只读 GET 不要求 CSRF，写请求仍要求 CSRF |
 | 新配置 / 切面 | `@Configuration` 不随模块自动扫描，显式加入对应容器的 `@Import`；作用于 Controller 的切面放 MVC 容器，Service 切面放根容器 |
 
-两层容器都启用了 AOP；测试探针证明 Controller 能被代理，但 **B-14 业务权限注解/切面及 B-15 操作日志仍待实现**。现有角色权限接口继续由 `PermissionQueryGuard` 保护。A 新业务接口在接入 B-14 前不能声称已通过权限验收。
+两层容器都启用了 AOP；`PermissionAspect` 显式导入 MVC 子容器，现有 6 个角色/权限入口使用 `@RequirePermission`，旧 `PermissionQueryGuard` 已移除。A 在 Controller 的 public、非 final 实现方法上声明权限，见[B-14 接入说明](../api/B14权限注解接入.md)。B-15 日志切面注册在根容器，支持 Service 和 MVC 代理，推荐把日志注解放在负责写事务的 Service。成功日志与业务同事务，受检异常也默认回滚，见[B-15 接入说明](../api/B15操作日志接入.md)。A 真实业务仍需联调验收。
 
-迁移范围已交付注册、登录退出、当前用户、用户批量读取、角色权限查询和分配、公共响应/异常/校验/requestId。用户管理完整业务、日志及其查询等剩余任务以 B 清单为准。
+当前累计基线已交付注册、登录退出、当前用户、用户批量读取、角色权限查询和分配、公共响应/异常/校验/requestId，以及后续用户分页与启停、权限 AOP、操作日志及查询和角色批量读取优化。真实 A/B 联调、页面与人工交付待办以 B 清单为准。
 
 ## 7 联合接入下一步
 
-A 从该迁移分支的完整基线建立自己的内容分支，避免只摘取单个配置文件。双方按 A-M00 检查构建、数据库配置、content Mapper/XML、作者读取及权限接口；A 实际验收结果另行记录。本次没有替 A 确认验收，也未合并 main。
+A 新开始接入时可从 `test/integration-readiness@8872274` 建立内容分支，包含全部当前 B 生产成果及交接清单；本文件所在后续文档分支也保留该累计基线。若已经基于之前的分支开发，先审查并合入后续提交，保留自己的改动。避免只摘取单个配置文件。双方按 A-M00 检查构建、数据库配置、content Mapper/XML、作者读取、权限及日志；A 实际验收结果另行记录。本次没有替 A 确认验收，也未合并 main。
 
 随后继续 B-14 分类权限联调，再做 B-15 写操作日志联调。原 Boot 验证记录作为历史保留，新环境结论见迁移验证记录。
+
+2026-10-12 已从 `8872274` 独立检出并验证 B 空库、外部配置和 WAR 部署，177 项常规测试及真实 HTTP 专项 1 项通过，见[B20 部署验证记录](../verification/B20独立检出与空库部署验证记录.md)。该结果不包含 A 内容表或人工 ApiFox。
 
 参考：[MyBatis-Plus 官方安装说明](https://baomidou.com/getting-started/install/)、[Apache Tomcat 10 下载及版本说明](https://tomcat.apache.org/download-10.cgi)。

@@ -46,7 +46,7 @@ A 的首要目标应从“内容模型与资产平台”收缩为“分类与文
 - 当前用户上下文：至少包含 `userId`、用户名、角色或权限集合。
 - 权限注解，例如 `@RequirePermission("cms:article:create")`。
 - 权限编码沿用公共契约：`cms:article:read`、`cms:article:create`、`cms:article:edit`、`cms:article:delete`、`cms:article:submit`、`cms:article:audit`、`cms:article:publish`、`cms:article:offline`，以及分类权限。
-- 操作日志注解或统一记录方式，例如 `@OperationLog(module = "文章管理", action = "发布")`。
+- 操作日志注解，例如 `@OperationLog(module = "ARTICLE", action = "PUBLISH", targetType = "ARTICLE", targetIdExpression = "#articleId")`；具体事务边界和编码见 B-15 接入说明。
 - 统一返回结构、业务异常类型、错误码和分页返回结构。
 
 如果 B 的切面尚未完成，A 可以先开发 Service 规则和持久层。后台接口最终验收必须接入真实权限；临时保护须与 B 约定并随后替换，不使用权限空实现，不在各 Controller 复制权限逻辑。
