@@ -1,0 +1,1079 @@
+{
+  "info": {
+    "name": "CMS A 接口请求基线（SSM本地HTTP已接入）",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "请求目录，不可按全部条目的目录顺序批量运行。可执行的本地 Apifox 原生场景见 content.apifox-cli.json 及两份会话负例文件；运行证据单独记录，本请求模板不等同于原生场景执行报告。"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/enterprise-cms"
+    },
+    {
+      "key": "username",
+      "value": ""
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "categoryVersion",
+      "value": ""
+    },
+    {
+      "key": "articleId",
+      "value": ""
+    },
+    {
+      "key": "articleVersion",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "获取CSRF令牌（登录后须重取）",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/csrf-token",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "现有认证接口。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  pm.collectionVariables.set('csrfToken', body.data.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "登录（令牌及Session轮换）",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/login",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "现有认证接口。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"username\": \"{{username}}\", \"password\": \"{{password}}\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  pm.collectionVariables.set('csrfToken', ''); // 登录后先重新获取令牌",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "当前身份",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/auth/me",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "现有认证接口。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "退出",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/auth/logout",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "现有认证接口。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "分类树",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/categories/tree",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "分类详情",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "新增分类",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/categories",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"联调分类\", \"sortOrder\": 0}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  pm.collectionVariables.set('categoryId', body.data.id);",
+              "  pm.collectionVariables.set('categoryVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "修改分类名称",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"分类新名称\", \"version\": {{categoryVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('categoryVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "移动分类",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}/parent",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"parentId\": null, \"version\": {{categoryVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('categoryVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "分类排序",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}/sort",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"sortOrder\": 1, \"version\": {{categoryVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('categoryVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "分类启停",
+      "request": {
+        "method": "PATCH",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}/status",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"status\": \"DISABLED\", \"version\": {{categoryVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('categoryVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "删除分类",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/categories/{{categoryId}}?version={{categoryVersion}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章分页筛选",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/articles",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "新增草稿",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"联调草稿\", \"content\": \"<p>联调正文</p>\", \"categoryId\": {{categoryId}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  pm.collectionVariables.set('articleId', body.data.id);",
+              "  pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "后台文章详情",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "编辑文章",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"修改后的草稿\", \"content\": \"<p>修改正文</p>\", \"categoryId\": {{categoryId}}, \"version\": {{articleVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "逻辑删除文章",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}?version={{articleVersion}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：submit",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/submit",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：approve",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/approve",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}, \"comment\": \"通过\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：reject",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/reject",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}, \"comment\": \"请补充材料\"}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：publish",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/publish",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：offline",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/offline",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "文章动作：reopen",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/reopen",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"version\": {{articleVersion}}}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "  if (body.data && body.data.version !== undefined) pm.collectionVariables.set('articleVersion', body.data.version);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "批量发布（全成全败）",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/articles/batch-publish",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"items\": [{\"id\": {{articleId}}, \"version\": {{articleVersion}}}]}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "待审队列",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/articles/review-queue",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "状态历史",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/articles/{{articleId}}/history",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "公开文章分页",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/public/articles",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "公开文章详情",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/public/articles/{{articleId}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "description": "本地真实 Controller 已验证；ApiFox 场景仍需实际导入运行。Cookie 使用客户端 Cookie Jar；不导出实际 Cookie。"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', function () { pm.response.to.have.status(200); });",
+              "if (pm.response.code === 200) {",
+              "  const body = pm.response.json();",
+              "  pm.test('统一响应', () => { pm.expect(body.code).to.eql('OK'); pm.expect(body.requestId).to.be.a('string').and.not.empty; });",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

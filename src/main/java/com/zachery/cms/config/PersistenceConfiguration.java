@@ -23,7 +23,9 @@ import javax.sql.DataSource;
 
 @Configuration(proxyBeanMethods = false)
 @EnableTransactionManagement(proxyTargetClass = true, order = 0, rollbackOn = RollbackOn.ALL_EXCEPTIONS)
-@MapperScan({"com.zachery.cms.modules.identity.persistence.mapper", "com.zachery.cms.modules.content.persistence.mapper"})
+@MapperScan({"com.zachery.cms.modules.identity.persistence.mapper", "com.zachery.cms.modules.content.persistence.mapper",
+        "com.zachery.cms.modules.content.category.mapper", "com.zachery.cms.modules.content.article.mapper",
+        "com.zachery.cms.modules.content.publication.mapper"})
 public class PersistenceConfiguration {
     @Bean(destroyMethod = "close") public HikariDataSource dataSource(Environment env) {
         HikariConfig config = new HikariConfig();

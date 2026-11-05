@@ -29,3 +29,23 @@ runtime/
 .cache/
 .env
 config/cms.local.properties
+
+frontend/node_modules/
+
+src/main/webapp/content/
+
+output/playwright/
+
+__pycache__/
+
+# Local A workflow and acceptance evidence
+AGENTS.md
+docs/delivery/
+docs/optimization/
+docs/verification/A*
+docs/verification/MySQL*
+docs/verification/SSM*
+docs/verification/Tomcat发行包校验.json
+docs/verification/外部Tomcat*
+docs/deployment/A内容模块干净环境运行与演示.md
+docs/api/collections/*.local.json

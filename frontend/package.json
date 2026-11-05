@@ -1,0 +1,9 @@
+{
+  "name": "cms-content-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": { "dev": "vite --host 127.0.0.1", "typecheck": "vue-tsc --noEmit", "build": "npm run typecheck && vite build" },
+  "dependencies": { "vue": "3.5.44", "element-plus": "2.14.7", "@element-plus/icons-vue": "2.3.2" },
+  "devDependencies": { "vite": "8.3.5", "@vitejs/plugin-vue": "6.0.10", "typescript": "5.9.3", "vue-tsc": "3.3.14" }
+}

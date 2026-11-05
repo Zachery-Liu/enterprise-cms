@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zachery.cms.modules.content.article.mapper.ArticleMapper">
+    <select id="selectReviewPage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
+        <bind name="titlePattern" value="query.titlePattern()"/>
+        <bind name="start" value="query.start()"/><bind name="end" value="query.end()"/>
+        SELECT a.id,a.title,a.summary,a.category_id,COALESCE(c.name,'未知分类') AS category_name,
+            a.author_id,a.status,a.version,a.created_at,a.updated_at,a.published_at,s.submitted_at
+        FROM cms_article a LEFT JOIN cms_category c ON c.id=a.category_id AND c.deleted=0
+        JOIN (SELECT article_id,MAX(created_at) AS submitted_at FROM cms_article_status_history
+              WHERE action='SUBMIT' GROUP BY article_id) s ON s.article_id=a.id
+        WHERE a.status='PENDING' AND a.deleted=0
+        <if test="query.title != null">AND a.title LIKE #{titlePattern} ESCAPE '!'</if>
+        <if test="query.categoryId != null">AND a.category_id=#{query.categoryId}</if>
+        <if test="query.authorId != null">AND a.author_id=#{query.authorId}</if>
+        <if test="query.submittedFrom != null">AND s.submitted_at &gt;= #{start}</if>
+        <if test="query.submittedTo != null">AND s.submitted_at &lt; #{end}</if>
+        ORDER BY s.submitted_at,a.id
+    </select>
+    <select id="selectPublicPage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
+        <bind name="titlePattern" value="query.titlePattern()"/>
+        SELECT a.id,a.title,a.summary,a.category_id,COALESCE(c.name,'未知分类') AS category_name,a.author_id,a.published_at
+        FROM cms_article a LEFT JOIN cms_category c ON c.id=a.category_id AND c.deleted=0
+        WHERE a.status='PUBLISHED' AND a.deleted=0
+        <if test="query.title != null">AND a.title LIKE #{titlePattern} ESCAPE '!'</if>
+        <if test="query.categoryId != null">AND a.category_id=#{query.categoryId}</if>
+        ORDER BY a.published_at DESC,a.id DESC
+    </select>
+    <select id="selectPublished" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE id=#{id} AND status='PUBLISHED' AND deleted=0
+    </select>
+    <select id="selectArticlePage" resultType="com.zachery.cms.modules.content.article.dto.ArticlePageRow">
+        <bind name="titlePattern" value="query.getTitlePattern()"/>
+        <bind name="createdStart" value="query.getCreatedStart()"/>
+        <bind name="createdEnd" value="query.getCreatedEnd()"/>
+        <bind name="updatedStart" value="query.getUpdatedStart()"/>
+        <bind name="updatedEnd" value="query.getUpdatedEnd()"/>
+        SELECT a.id,a.title,a.summary,a.category_id,COALESCE(c.name,'未知分类') AS category_name,
+            a.author_id,a.status,a.version,a.created_at,a.updated_at,a.published_at
+        FROM cms_article a LEFT JOIN cms_category c ON c.id=a.category_id AND c.deleted=0
+        WHERE a.deleted=0
+        <if test="query.title != null">AND a.title LIKE #{titlePattern} ESCAPE '!'</if>
+        <if test="query.categoryId != null">AND a.category_id=#{query.categoryId}</if>
+        <if test="query.status != null">AND a.status=#{query.status}</if>
+        <if test="query.authorId != null">AND a.author_id=#{query.authorId}</if>
+        <if test="query.createdFrom != null">AND a.created_at &gt;= #{createdStart}</if>
+        <if test="query.createdTo != null">AND a.created_at &lt; #{createdEnd}</if>
+        <if test="query.updatedFrom != null">AND a.updated_at &gt;= #{updatedStart}</if>
+        <if test="query.updatedTo != null">AND a.updated_at &lt; #{updatedEnd}</if>
+        ORDER BY
+        <choose>
+            <when test="query.sort == 'createdAt'">a.created_at</when>
+            <when test="query.sort == 'publishedAt'">a.published_at</when>
+            <when test="query.sort == 'title'">a.title</when>
+            <otherwise>a.updated_at</otherwise>
+        </choose>
+        <choose><when test="query.direction == 'ASC'">ASC, a.id ASC</when><otherwise>DESC, a.id DESC</otherwise></choose>
+    </select>
+    <select id="selectForUpdate" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE id=#{id} AND deleted=0 FOR UPDATE
+    </select>
+    <select id="selectBatchForUpdate" resultType="com.zachery.cms.modules.content.article.entity.ArticleEntity">
+        SELECT * FROM cms_article WHERE deleted=0 AND id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+        ORDER BY id FOR UPDATE
+    </select>
+    <update id="updateContent">
+        UPDATE cms_article SET title=#{row.title}, summary=#{row.summary,jdbcType=VARCHAR}, content=#{row.content},
+            category_id=#{row.categoryId}, version=version+1, updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND version=#{row.version} AND status=#{row.status}
+          AND status IN ('DRAFT','REJECTED') AND deleted=0
+    </update>
+    <update id="markDeleted">
+        UPDATE cms_article SET deleted=1, version=version+1, updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND version=#{row.version} AND status=#{row.status}
+          AND status IN ('DRAFT','REJECTED','OFFLINE') AND deleted=0
+    </update>
+    <update id="updateLifecycle">
+        UPDATE cms_article SET status=#{row.status}, review_comment=#{row.reviewComment,jdbcType=VARCHAR},
+            reviewer_id=#{row.reviewerId,jdbcType=BIGINT}, reviewed_at=#{row.reviewedAt,jdbcType=TIMESTAMP},
+            published_at=#{row.publishedAt,jdbcType=TIMESTAMP}, version=version+1,
+            updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
+        WHERE id=#{row.id} AND status=#{previous} AND version=#{row.version} AND deleted=0
+    </update>
+</mapper>
