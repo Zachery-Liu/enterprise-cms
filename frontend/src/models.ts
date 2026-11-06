@@ -6,7 +6,11 @@ export interface Page<T> { records: T[]; total: number; page: number; size: numb
 export interface Category { id: number; parentId: number | null; name: string; status: 'ENABLED' | 'DISABLED'; version: number; sortOrder: number; children: Category[] }
 export interface Article { id: number; title: string; summary: string | null; categoryId: number; categoryName: string; authorId: number; authorDisplayName: string; status: Status; version: number; createdAt: string; updatedAt: string; publishedAt: string | null; submittedAt?: string }
 export interface Detail extends Article { content: string; reviewComment?: string | null; reviewerDisplayName?: string | null }
-export interface PublicArticle { id: number; title: string; summary: string | null; categoryName: string; authorDisplayName: string; publishedAt: string }
+export interface PublicArticle { id: number; title: string; summary: string | null; categoryId: number; categoryName: string; authorDisplayName: string; publishedAt: string }
+export interface PublicCategory { id: number; name: string }
+export interface AuthorOption { id: number; displayName: string }
+export interface ImageUploadResult { id: string; url: string; width: number; height: number; size: number }
+export interface LeaveGuard { beforeLeave(): Promise<boolean> }
 export interface PublicDetail extends PublicArticle { content: string }
 export interface History { id: number; action: string; fromStatus: Status | null; toStatus: Status; operatorDisplayName: string; reason: string | null; createdAt: string }
 export interface Transition { id: number; version: number; status: Status }

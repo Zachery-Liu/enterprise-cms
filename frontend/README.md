@@ -24,11 +24,13 @@ mvn clean package
 
 ## 开发与验证
 
-`npm run dev` 仅监听本机，开发代理将 `/api` 转发到 `http://127.0.0.1:8080/cms/api`，并将 Cookie Path 改为开发根路径。按实际 Tomcat 端口修改 vite.config.ts；代理不是另一套后端。
+`npm run dev` 仅监听本机。默认代理目标为 `http://127.0.0.1:8080`，上下文为 `/cms`，支持 `/api`、`/media` 和后端返回的 `/cms/media` 地址；Cookie Path 改为开发根路径。启动前可通过环境变量 `VITE_CMS_TARGET` 和 `VITE_CMS_CONTEXT` 指定实际 Tomcat 地址及上下文，不必修改源码；变量只配置开发代理，生产地址仍相对部署上下文解析。
 
 ```powershell
 npm run typecheck
 ```
+
+2026-11-06 UI A 第一批新增 `npm test`，用 Node 的 TypeScript 转换运行路由/API 契约测试；本轮实测 Node 24.15.0。该测试入口需要支持 `--experimental-transform-types` 的 Node（22.7+），会显示实验特性提示；不影响浏览器运行。Quill 固定为 2.0.3，仅准备依赖，编辑器组件由 B 后续接入。许可原文在 `public/licenses/Quill-LICENSE.txt`，构建会复制到 `content/licenses/`；实际进入打包的依赖仍由 Vite 自动收集许可。
 
 工程根目录的 `src/test/browser/content-pages.cjs` 用真实浏览器操作已构建页面，HTTP 数据来自仅监听回环地址的测试专用响应。安装了 Playwright 的环境可运行 `node src/test/browser/content-pages.cjs`；若未在模块搜索路径中，用 `CMS_PLAYWRIGHT_MODULE` 指向已有 Playwright 模块目录，`CMS_CHROMIUM_EXECUTABLE` 可指定本机 Chromium 可执行文件。脚本不安装依赖、不连接用户数据库，测试响应不会进入 WAR。
 

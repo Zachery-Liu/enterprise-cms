@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { ElAlert, ElButton, ElCard, ElDatePicker, ElDescriptions, ElDescriptionsItem, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElPageHeader, ElPagination, ElResult, ElSelect, ElTable, ElTableColumn, ElTag, type TableInstance } from 'element-plus';
 import { Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { can, errorText, request, StaleResponse } from '../api';
-import { displayDate, states, tagType, type Article, type Detail, type History, type Page } from '../models';
+import { displayDate, states, tagType, type Article, type Detail, type History, type Page, type LeaveGuard } from '../models';
 import ArticleEditor from './ArticleEditor.vue';
 import ArticleAction from './ArticleAction.vue';
 import SafePreview from './SafePreview.vue';
@@ -13,6 +13,14 @@ const page = ref<Page<Article>>({ records: [], total: 0, page: 1, size: 20 }), b
 const query = reactive({ title: '', categoryId: undefined as number | undefined, authorId: undefined as number | undefined, status: '', sort: 'updatedAt', direction: 'DESC', page: 1, size: 20 });
 const range = ref<[Date, Date] | null>(null), editor = ref(false), editing = ref<Detail>(), detail = ref<Detail | null>(null), action = ref(''), targets = ref<Article[]>([]);
 const histories = ref<Page<History> | null>(null), historyId = ref<number | null>(null);
+const editorRef = ref<Partial<LeaveGuard> | null>(null);
+// B6 supplies the editor guard; keep today's editor props and events intact.
+async function beforeLeave(): Promise<boolean> {
+  if (!editor.value) return true;
+  if (editorRef.value?.beforeLeave) return await editorRef.value.beforeLeave();
+  return window.confirm('编辑器尚未提供未保存检查。离开将丢弃当前输入，确定离开吗？');
+}
+defineExpose({ beforeLeave });
 let revision = 0, live = true;
 onUnmounted(() => { live = false; revision++; });
 const allowed = (scope: string) => can(`cms:article:${scope}`);
@@ -81,7 +89,7 @@ onMounted(() => { if (permitted.value) void load(); });
       </el-table>
       <el-pagination v-model:current-page="query.page" v-model:page-size="query.size" :page-sizes="[10,20,50,100]" :total="page.total" layout="total, sizes, prev, pager, next" class="page-pagination" @current-change="load" @size-change="query.page = 1; load()" />
     </el-card>
-    <ArticleEditor v-if="editor" :article="editing" @close="editor = false; editing = undefined" @saved="saved" />
+    <ArticleEditor v-if="editor" ref="editorRef" :article="editing" @close="editor = false; editing = undefined" @saved="saved" />
     <ArticleAction v-if="action" :action="action" :articles="targets" @close="action = ''" @saved="saved" />
     <el-dialog :model-value="Boolean(detail)" title="文章详情" width="860px" destroy-on-close @close="detail = null"><template v-if="detail"><h3>{{ detail.title }}</h3><el-descriptions :column="2" border><el-descriptions-item label="分类">{{ detail.categoryName }}</el-descriptions-item><el-descriptions-item label="作者">{{ detail.authorDisplayName }}</el-descriptions-item><el-descriptions-item label="状态">{{ states[detail.status] }}</el-descriptions-item><el-descriptions-item label="版本">{{ detail.version }}</el-descriptions-item><el-descriptions-item label="更新时间">{{ displayDate(detail.updatedAt) }}</el-descriptions-item><el-descriptions-item label="审核意见">{{ detail.reviewComment || '—' }}</el-descriptions-item></el-descriptions><p>{{ detail.summary }}</p><SafePreview :content="detail.content" /></template></el-dialog>
     <el-dialog :model-value="Boolean(histories)" title="状态历史" width="900px" destroy-on-close @close="histories = null; historyId = null"><template v-if="histories"><el-table :data="histories.records" border><el-table-column prop="action" label="动作" width="110" /><el-table-column label="原状态" width="100"><template #default="{row}">{{ row.fromStatus ? states[row.fromStatus as keyof typeof states] : '—' }}</template></el-table-column><el-table-column label="目标状态" width="100"><template #default="{row}">{{ states[row.toStatus as keyof typeof states] }}</template></el-table-column><el-table-column prop="operatorDisplayName" label="操作者" width="110" /><el-table-column prop="reason" label="原因" min-width="180" /><el-table-column label="时间" width="180"><template #default="{row}">{{ displayDate(row.createdAt) }}</template></el-table-column></el-table><el-pagination :current-page="histories.page" :page-size="20" :total="histories.total" layout="total, prev, pager, next" class="page-pagination" @current-change="number => historyId && history(historyId,number)" /></template></el-dialog>
