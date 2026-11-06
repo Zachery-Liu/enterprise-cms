@@ -1,6 +1,6 @@
 import { test, beforeEach, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { ApiError, StaleResponse, forget, request, uploadImage } from '../src/api.ts';
+import { ApiError, StaleResponse, forget, request, uploadImage, writesLocked } from '../src/api.ts';
 
 const originalFetch = globalThis.fetch;
 globalThis.window = new EventTarget();
@@ -8,7 +8,7 @@ globalThis.location = new URL('https://cms.example/other-context/content/index.h
 const image = { id: 'abc-123', url: '/other-context/media/images/abc-123', width: 20, height: 30, size: 6 };
 const file = () => new File(['sample'], 'photo.png', { type: 'image/png' });
 const ok = data => Response.json({ code: 'OK', message: 'OK', data });
-beforeEach(() => { forget(); });
+beforeEach(() => { forget(); writesLocked.value = false; });
 after(() => { globalThis.fetch = originalFetch; });
 
 test('multipart keeps browser boundary, Cookie and CSRF, and uses actual context', async () => {
@@ -75,4 +75,16 @@ test('untrusted or mismatched image URLs are rejected', async () => {
     globalThis.fetch = async u => ok(String(u).endsWith('csrf-token') ? { token: 't' } : { ...image, url });
     await assert.rejects(uploadImage(file()), ApiError);
   }
+});
+test('suspended session blocks business writes without sending a request', async () => {
+  writesLocked.value = true;
+  globalThis.fetch = async () => { assert.fail('suspended write reached network'); };
+  await assert.rejects(request('articles', { method: 'POST', body: { title: 'draft' } }), e => e instanceof ApiError && e.status === 401);
+});
+test('suspended session still permits explicit reauthentication', async () => {
+  writesLocked.value = true;
+  let requests = 0;
+  globalThis.fetch = async url => { requests++; return ok(String(url).endsWith('csrf-token') ? {token:'t'} : null); };
+  await request('auth/login', { method:'POST', body:{username:'test',password:'test-only'} });
+  assert.equal(requests, 2);
 });

@@ -2,6 +2,7 @@ import { shallowRef } from 'vue';
 import type { ImageUploadResult, User } from './models';
 export const currentUser = shallowRef<User | null>(null);
 export const permissionRevision = shallowRef(0);
+export const writesLocked = shallowRef(false);
 export const can = (permission: string) => Boolean(currentUser.value?.permissionCodes.includes(permission));
 export class ApiError extends Error {
   constructor(public status: number, message: string, public requestId = '') { super(message); }
@@ -20,6 +21,8 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
   options.signal?.throwIfAborted();
   const base = import.meta.env?.DEV ? new URL('/api/', location.origin) : new URL('../api/', location.href);
   const url = new URL(path, base), method = options.method || 'GET', write = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  if (write && writesLocked.value && !['auth/login', 'auth/logout'].includes(path))
+    throw new ApiError(401, '会话已失效，请使用原账号重新登录后继续。');
   for (const [name, value] of Object.entries(options.query || {})) if (value !== '' && value !== undefined && value !== null) url.searchParams.set(name, String(value));
   if (write && !token) await csrf(options.signal);
   options.signal?.throwIfAborted();

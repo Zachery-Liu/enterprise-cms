@@ -7,13 +7,20 @@ import { displayDate, states, tagType, type Article, type Detail, type History, 
 import ArticleEditor from './ArticleEditor.vue';
 import ArticleAction from './ArticleAction.vue';
 import SafePreview from './SafePreview.vue';
-const props = defineProps<{ review: boolean }>();
+const props = defineProps<{ review: boolean; suspended?: boolean }>();
 const permitted = computed(() => can(`cms:article:${props.review ? 'audit' : 'read'}`));
 const page = ref<Page<Article>>({ records: [], total: 0, page: 1, size: 20 }), busy = ref(false), error = ref(''), selection = ref<Article[]>([]), tableRef = ref<TableInstance>();
 const query = reactive({ title: '', categoryId: undefined as number | undefined, authorId: undefined as number | undefined, status: '', sort: 'updatedAt', direction: 'DESC', page: 1, size: 20 });
 const range = ref<[Date, Date] | null>(null), editor = ref(false), editing = ref<Detail>(), detail = ref<Detail | null>(null), action = ref(''), targets = ref<Article[]>([]);
 const histories = ref<Page<History> | null>(null), historyId = ref<number | null>(null);
 const editorRef = ref<Partial<LeaveGuard> | null>(null);
+const advanced = ref(!window.matchMedia('(max-width:760px)').matches);
+function warnBeforeUnload(event: BeforeUnloadEvent) {
+  // Conservative protection until B6 supplies its own dirty-aware lifecycle.
+  if (editor.value && !editorRef.value?.beforeLeave) { event.preventDefault(); event.returnValue = ''; }
+}
+onMounted(() => window.addEventListener('beforeunload', warnBeforeUnload));
+onUnmounted(() => window.removeEventListener('beforeunload', warnBeforeUnload));
 // B6 supplies the editor guard; keep today's editor props and events intact.
 async function beforeLeave(): Promise<boolean> {
   if (!editor.value) return true;
@@ -61,26 +68,26 @@ function saved() { editor.value = false; editing.value = undefined; action.value
 onMounted(() => { if (permitted.value) void load(); });
 </script>
 <template>
-  <el-result v-if="!permitted" icon="warning" title="没有此页面的读取权限" />
+  <el-result v-if="!permitted && !suspended" icon="warning" title="没有此页面的读取权限" />
   <template v-else>
     <el-page-header icon="" title="内容管理" :content="review ? '审核队列' : '文章管理'" class="page-header" />
     <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" class="page-alert" />
     <el-card>
       <el-form :inline="true" :model="query" class="filter-form" @submit.prevent="filter">
+        <el-button class="advanced-toggle" text @click="advanced = !advanced">{{ advanced ? '收起高级筛选' : '展开高级筛选' }}</el-button>
         <el-form-item label="标题"><el-input v-model="query.title" name="filterTitle" placeholder="标题关键词" clearable :maxlength="200" style="width:190px" /></el-form-item>
-        <el-form-item label="分类 ID"><el-input-number v-model="query.categoryId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" style="width:110px" /></el-form-item>
-        <el-form-item label="作者 ID"><el-input-number v-model="query.authorId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" style="width:110px" /></el-form-item>
-        <el-form-item v-if="!review" label="状态"><el-select v-model="query.status" clearable placeholder="全部" style="width:130px" aria-label="状态筛选"><el-option v-for="(label,value) in states" :key="value" :label="label" :value="value" /></el-select></el-form-item>
-        <el-form-item v-if="!review" label="排序"><el-select v-model="query.sort" style="width:130px" aria-label="排序字段"><el-option v-for="(label,value) in { updatedAt:'更新时间',createdAt:'创建时间',publishedAt:'发布时间',title:'标题' }" :key="value" :label="label" :value="value" /></el-select></el-form-item>
-        <el-form-item v-if="!review"><el-select v-model="query.direction" style="width:90px" aria-label="排序方向"><el-option label="降序" value="DESC" /><el-option label="升序" value="ASC" /></el-select></el-form-item>
-        <el-form-item :label="review ? '提交时间' : '更新时间'"><el-date-picker v-model="range" type="datetimerange" start-placeholder="开始（本地时间）" end-placeholder="截止（不含）" style="width:345px" /></el-form-item>
+        <el-form-item v-show="advanced" label="分类 ID"><el-input-number v-model="query.categoryId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" style="width:110px" /></el-form-item>
+        <el-form-item v-show="advanced" label="作者 ID"><el-input-number v-model="query.authorId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" style="width:110px" /></el-form-item>
+        <el-form-item v-show="advanced" v-if="!review" label="状态"><el-select v-model="query.status" clearable placeholder="全部" style="width:130px" aria-label="状态筛选"><el-option v-for="(label,value) in states" :key="value" :label="label" :value="value" /></el-select></el-form-item>
+        <el-form-item v-show="advanced" v-if="!review" label="排序"><div class="sort-controls"><el-select v-model="query.sort" style="width:130px" aria-label="排序字段"><el-option v-for="(label,value) in { updatedAt:'更新时间',createdAt:'创建时间',publishedAt:'发布时间',title:'标题' }" :key="value" :label="label" :value="value" /></el-select><el-select v-model="query.direction" style="width:90px" aria-label="排序方向"><el-option label="降序" value="DESC" /><el-option label="升序" value="ASC" /></el-select></div></el-form-item>
+        <el-form-item v-show="advanced" :label="review ? '提交时间' : '更新时间'"><el-date-picker v-model="range" type="datetimerange" start-placeholder="开始（本地时间）" end-placeholder="截止（不含）" style="width:345px" /></el-form-item>
         <el-form-item><el-button type="primary" :icon="Search" native-type="submit" :loading="busy">查询</el-button><el-button @click="reset">重置</el-button></el-form-item>
       </el-form>
       <div class="table-tools"><div><el-button v-if="!review && allowed('create')" type="primary" :icon="Plus" @click="editing = undefined; editor = true">新建文章</el-button><el-button v-if="allowed('publish')" :disabled="selection.length === 0" @click="choose('batch',selection)">批量发布（{{ selection.length }}/50）</el-button></div><el-button :icon="Refresh" :loading="busy" @click="load">刷新</el-button></div>
       <el-table ref="tableRef" :data="page.records" row-key="id" border stripe empty-text="没有符合条件的文章" @selection-change="selected">
         <el-table-column v-if="allowed('publish')" type="selection" width="48" :selectable="(row: Article) => row.status === 'APPROVED'" />
         <!-- @vue-generic {Article} -->
-        <el-table-column label="文章标题" min-width="240"><template #default="{row}"><el-button v-if="allowed('read')" link type="primary" class="article-title" @click="inspect(row)">{{ row.title }}</el-button><span v-else>{{ row.title }}</span></template></el-table-column>
+        <el-table-column label="文章标题" min-width="240"><template #default="{row}"><el-button v-if="allowed('read')" link type="primary" class="article-title" :title="row.title" @click="inspect(row)">{{ row.title }}</el-button><span v-else>{{ row.title }}</span></template></el-table-column>
         <el-table-column prop="categoryName" label="分类" min-width="110" /><el-table-column prop="authorDisplayName" label="作者" min-width="110" />
         <el-table-column label="状态" width="105"><template #default="{row}"><el-tag :type="tagType(row.status)">{{ states[row.status as keyof typeof states] }}</el-tag></template></el-table-column>
         <el-table-column :label="review ? '提交时间' : '更新时间'" width="180"><template #default="{row}">{{ displayDate(review ? row.submittedAt : row.updatedAt) }}</template></el-table-column>
