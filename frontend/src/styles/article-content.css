@@ -1,0 +1,111 @@
+/* Shared by the sandboxed preview (?inline) and the public reader.
+   Keep every selector inside .cms-article-content to avoid styling the shell. */
+.cms-article-content {
+  color: #263244;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-align: start;
+}
+
+.cms-article-content,
+.cms-article-content * {
+  box-sizing: border-box;
+}
+
+.cms-article-content > :first-child { margin-top: 0; }
+.cms-article-content > :last-child { margin-bottom: 0; }
+.cms-article-content p { margin: 0 0 1.15em; }
+
+.cms-article-content h1,
+.cms-article-content h2,
+.cms-article-content h3,
+.cms-article-content h4,
+.cms-article-content h5,
+.cms-article-content h6 {
+  margin: 1.8em 0 0.65em;
+  color: #172334;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.cms-article-content h1 { font-size: 2em; }
+.cms-article-content h2 { font-size: 1.6em; }
+.cms-article-content h3 { font-size: 1.3em; }
+.cms-article-content h4 { font-size: 1.125em; }
+.cms-article-content h5,
+.cms-article-content h6 { font-size: 1em; }
+
+.cms-article-content strong,
+.cms-article-content b { font-weight: 650; }
+.cms-article-content a {
+  color: #1765b5;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+.cms-article-content a:hover { color: #124c88; }
+.cms-article-content a:focus-visible {
+  outline: 2px solid #1765b5;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.cms-article-content ul,
+.cms-article-content ol { margin: 0 0 1.15em; padding-inline-start: 1.75em; }
+.cms-article-content li { margin: 0.3em 0; }
+.cms-article-content li > p { margin: 0; }
+.cms-article-content li > ul,
+.cms-article-content li > ol { margin: 0.35em 0; }
+
+.cms-article-content blockquote {
+  margin: 1.4em 0;
+  padding: 0.75em 1em;
+  border-inline-start: 3px solid #9ab8d8;
+  background: #f4f7fa;
+  color: #526174;
+}
+.cms-article-content blockquote > :last-child { margin-bottom: 0; }
+
+.cms-article-content code,
+.cms-article-content pre {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.875em;
+  tab-size: 2;
+}
+.cms-article-content code {
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  background: #eef2f6;
+}
+.cms-article-content pre {
+  max-width: 100%;
+  margin: 1.4em 0;
+  padding: 1em 1.15em;
+  overflow-x: auto;
+  border: 1px solid #e0e7ef;
+  border-radius: 6px;
+  background: #f6f8fa;
+  line-height: 1.65;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.cms-article-content pre code {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 1em;
+}
+
+.cms-article-content img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .cms-article-content h1 { font-size: 1.75em; }
+  .cms-article-content h2 { font-size: 1.45em; }
+  .cms-article-content pre { padding: 0.85em; }
+}

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
-import { ElAlert, ElButton, ElCard, ElDescriptions, ElDescriptionsItem, ElDialog, ElEmpty, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElPageHeader, ElResult, ElSelect, ElTag, ElTree } from 'element-plus';
+import { ElAlert, ElButton, ElCard, ElDescriptions, ElDescriptionsItem, ElDialog, ElEmpty, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElResult, ElSelect, ElTag, ElTree } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { can, errorText, request, StaleResponse } from '../api';
 import { availableCategories, type Category } from '../models';
@@ -47,9 +47,9 @@ onMounted(() => { if (can('cms:category:read')) void load(); });
 <template>
   <el-result v-if="!can('cms:category:read')" icon="warning" title="没有分类读取权限" />
   <template v-else>
-    <el-page-header icon="" title="内容管理" content="分类管理" class="page-header" />
+    <header class="admin-page-heading"><div><h1>分类管理</h1><p>维护文章分类与栏目层级。</p></div></header>
     <el-alert v-if="error" :title="error" type="error" show-icon :closable="false" class="page-alert" />
-    <el-card>
+    <el-card shadow="never" class="admin-panel">
       <div class="table-tools"><el-button v-if="manage" type="primary" :icon="Plus" @click="edit('create')">新增分类</el-button><el-button :icon="Refresh" :loading="busy" @click="load">刷新</el-button></div>
       <div class="category-layout">
         <div class="category-tree"><el-tree :data="tree" node-key="id" :props="{ label: 'name', children: 'children' }" highlight-current :expand-on-click-node="false" @node-click="(node: Category) => selected = node" /><el-empty v-if="!tree.length && !busy" description="暂无分类" :image-size="65" /></div>

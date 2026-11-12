@@ -33,3 +33,11 @@ npm run typecheck
 工程根目录的 `src/test/browser/content-pages.cjs` 用真实浏览器操作已构建页面，HTTP 数据来自仅监听回环地址的测试专用响应。安装了 Playwright 的环境可运行 `node src/test/browser/content-pages.cjs`；若未在模块搜索路径中，用 `CMS_PLAYWRIGHT_MODULE` 指向已有 Playwright 模块目录，`CMS_CHROMIUM_EXECUTABLE` 可指定本机 Chromium 可执行文件。脚本不安装依赖、不连接用户数据库，测试响应不会进入 WAR。
 
 浏览器结果与截图输出到 output/playwright，保留在本机。测试响应脚本为 src/test/browser/content-pages.cjs；真实后端脚本为 src/test/browser/content-live.cjs，需显式设置回环地址和专用测试凭据。
+
+## UI 改造：公开阅读与富文本
+
+公开入口采用独立阅读布局；正文共享 `src/styles/article-content.css`。文章编辑接入固定版本 Quill 2.0.3，保存仍为语义 HTML，上传使用同源 FormData 与既有 CSRF。
+
+图片交互已经接入约定接口，但真实后端的媒体上传、存储、访问及图片清洗仍待 A 提供。公开分类接口不可用时，页面保留搜索与阅读并提供分类重试。勿把隔离预览当作真实接口完成。
+
+组件/接口与 A 接入差异见 [交接契约](../docs/integration/UI改造-B1组件与接口契约.md)，实际验证与限制见 [B 前端验证记录](../docs/verification/UI改造-B前端验证记录.md)。可用 `node src/test/browser/content-b-fixture.cjs` 从工程根目录启动隔离人工验收服务；它不访问数据库，也不进入 WAR。

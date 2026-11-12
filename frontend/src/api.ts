@@ -14,7 +14,7 @@ export function errorText(error: unknown): string {
   return error.message + (error instanceof ApiError && error.status === 409 ? ' 请核对最新数据，当前输入已保留，未自动覆盖。' : '')
     + (error instanceof ApiError && error.requestId ? `（请求编号：${error.requestId}）` : '');
 }
-type Options = { method?: string; body?: unknown; query?: Record<string, string | number | null | undefined> };
+type Options = { method?: string; body?: unknown; signal?: AbortSignal; query?: Record<string, string | number | null | undefined> };
 export async function request<T>(path: string, options: Options = {}): Promise<T> {
   const generation = epoch;
   const base = import.meta.env.DEV ? new URL('/api/', location.origin) : new URL('../api/', location.href);
@@ -23,9 +23,9 @@ export async function request<T>(path: string, options: Options = {}): Promise<T
   if (write && !token) await csrf();
   if (generation !== epoch) throw new StaleResponse();
   let response: Response;
-  try { response = await fetch(url, { method, credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', ...(write ? { 'X-CSRF-Token': token } : {}),
-    ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }) }, ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }) }); }
-  catch { throw new ApiError(0, '无法连接服务，请检查网络后重试。'); }
+  try { response = await fetch(url, { method, signal: options.signal, credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json', ...(write ? { 'X-CSRF-Token': token } : {}),
+    ...(options.body === undefined || options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }) }, ...(options.body === undefined ? {} : { body: options.body instanceof FormData ? options.body : JSON.stringify(options.body) }) }); }
+  catch (error) { if (options.signal?.aborted) throw new DOMException('上传已取消', 'AbortError'); throw new ApiError(0, '无法连接服务，请检查网络后重试。'); }
   if (generation !== epoch) throw new StaleResponse();
   let raw: unknown;
   try { raw = await response.json(); } catch { throw new ApiError(response.status, '服务未返回有效接口响应。'); }
