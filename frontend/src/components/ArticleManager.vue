@@ -14,13 +14,13 @@ async function beforeLeave() {
 defineExpose({ beforeLeave, discard: () => editorRef.value?.discard() });
 import ArticleAction from './ArticleAction.vue';
 import SafePreview from './SafePreview.vue';
-const props = defineProps<{ review: boolean }>();
+const props = defineProps<{ review: boolean; suspended?: boolean }>();
 const permitted = computed(() => can(`cms:article:${props.review ? 'audit' : 'read'}`));
 const page = ref<Page<Article>>({ records: [], total: 0, page: 1, size: 20 }), busy = ref(false), error = ref(''), selection = ref<Article[]>([]), tableRef = ref<TableInstance>();
 const query = reactive({ title: '', categoryId: undefined as number | undefined, authorId: undefined as number | undefined, status: '', sort: 'updatedAt', direction: 'DESC', page: 1, size: 20 });
 const range = ref<[Date, Date] | null>(null), editor = ref(false), editing = ref<Detail>(), detail = ref<Detail | null>(null), action = ref(''), targets = ref<Article[]>([]);
 const histories = ref<Page<History> | null>(null), historyId = ref<number | null>(null);
-const advanced = ref(false);
+const advanced = ref(!window.matchMedia('(max-width:760px)').matches);
 const categoryTree = ref<Category[]>();
 async function loadCategories() {
   if (!can('cms:category:read')) return;
@@ -71,7 +71,7 @@ function saved() { editor.value = false; editing.value = undefined; action.value
 onMounted(() => { if (permitted.value) { void load(); void loadCategories(); const draft = readDraft(currentUser.value?.userId); if (draft) { editing.value = draft.article; editor.value = true; } } });
 </script>
 <template>
-  <el-result v-if="!permitted" icon="warning" title="没有此页面的读取权限" />
+  <el-result v-if="!permitted && !suspended" icon="warning" title="没有此页面的读取权限" />
   <template v-else>
     <header class="admin-page-heading">
       <div>
@@ -104,7 +104,7 @@ onMounted(() => { if (permitted.value) { void load(); void loadCategories(); con
         <div class="admin-filter-actions">
           <el-button type="primary" :icon="Search" native-type="submit" :loading="busy">查询</el-button>
           <el-button @click="reset">重置</el-button>
-          <el-button link :aria-expanded="advanced" aria-controls="advanced-article-filters" @click="advanced = !advanced">{{ advanced ? '收起高级筛选' : '高级筛选' }}</el-button>
+          <el-button link :aria-expanded="advanced" aria-controls="advanced-article-filters" @click="advanced = !advanced">{{ advanced ? '收起高级筛选' : '展开高级筛选' }}</el-button>
         </div>
       </el-form>
     </el-card>

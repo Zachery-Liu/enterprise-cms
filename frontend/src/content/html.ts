@@ -2,7 +2,9 @@
 export const CONTENT_LIMIT = 100000;
 const tags = new Set(['p','br','h1','h2','h3','h4','h5','h6','strong','b','em','i','u','ul','ol','li','blockquote','code','pre','a','img']);
 export function mediaBase(): URL {
-  return import.meta.env.DEV ? new URL('/media/images/', location.origin) : new URL('../media/images/', location.href);
+  return import.meta.env.DEV
+    ? new URL(`${import.meta.env.VITE_CMS_CONTEXT || '/cms'}/media/images/`, location.origin)
+    : new URL('../media/images/', location.href);
 }
 export function safeImageUrl(value: string): string | null {
   try {

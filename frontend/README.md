@@ -24,15 +24,17 @@ mvn clean package
 
 ## 开发与验证
 
-`npm run dev` 仅监听本机，开发代理将 `/api` 转发到 `http://127.0.0.1:8080/cms/api`，并将 Cookie Path 改为开发根路径。按实际 Tomcat 端口修改 vite.config.ts；代理不是另一套后端。
+`npm run dev` 仅监听本机。默认代理目标为 `http://127.0.0.1:8080`，上下文为 `/cms`，支持 `/api`、`/media` 和后端返回的 `/cms/media` 地址；Cookie Path 改为开发根路径。启动前可通过环境变量 `VITE_CMS_TARGET` 和 `VITE_CMS_CONTEXT` 指定实际 Tomcat 地址及上下文，不必修改源码；变量只配置开发代理，生产地址仍相对部署上下文解析。
 
 ```powershell
 npm run typecheck
 ```
 
-工程根目录的 `src/test/browser/content-pages.cjs` 用真实浏览器操作已构建页面，HTTP 数据来自仅监听回环地址的测试专用响应。安装了 Playwright 的环境可运行 `node src/test/browser/content-pages.cjs`；若未在模块搜索路径中，用 `CMS_PLAYWRIGHT_MODULE` 指向已有 Playwright 模块目录，`CMS_CHROMIUM_EXECUTABLE` 可指定本机 Chromium 可执行文件。脚本不安装依赖、不连接用户数据库，测试响应不会进入 WAR。
+`npm test` 用 Node 的 TypeScript 转换运行路由和 API 契约测试，需要支持 `--experimental-transform-types` 的 Node。Quill 2.0.3 的许可原文位于 `public/licenses/Quill-LICENSE.txt`，会随构建产物复制到 `content/licenses/`。Vite 也会收集实际进入构建产物的依赖许可。
 
-浏览器结果与截图输出到 output/playwright，保留在本机。测试响应脚本为 src/test/browser/content-pages.cjs；真实后端脚本为 src/test/browser/content-live.cjs，需显式设置回环地址和专用测试凭据。
+从工程根目录运行 `node src/test/browser/ui-shell.cjs`，可以用真实浏览器检查已构建的门户、移动端导航、Quill 离开确认和草稿恢复。脚本使用回环 HTTP 夹具。若 Playwright 未在模块搜索路径中，可用 `CMS_PLAYWRIGHT_MODULE` 指向模块目录，用 `CMS_CHROMIUM_EXECUTABLE` 指定本机 Chromium 可执行文件。
+
+浏览器结果和截图输出到 `output/playwright`。原内容页回归 `content-pages.cjs` 与真实后端脚本 `content-live.cjs` 的编辑器及公开页面选择器仍基于旧版页面。
 
 ## UI 改造：公开阅读与富文本
 
