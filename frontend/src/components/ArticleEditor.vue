@@ -24,12 +24,25 @@ let confirming: Promise<boolean> | undefined;
 async function beforeLeave(): Promise<boolean> {
   if (saving.value) return false;
   if (!dirty.value && !uploading.value) return true;
-  if (!confirming) confirming = ElMessageBox.confirm('尚有未保存的修改或正在上传的图片，离开后将丢弃。', '离开编辑？', { confirmButtonText: '丢弃并离开', cancelButtonText: '继续编辑', type: 'warning', distinguishCancelAndClose: true }).then(() => true).catch(() => false).finally(() => { confirming = undefined; });
+  if (!confirming) {
+    confirming = ElMessageBox.confirm('尚有未保存的修改或正在上传的图片，离开后将丢弃。', '离开编辑？', {
+      confirmButtonText: '丢弃并离开',
+      cancelButtonText: '继续编辑',
+      type: 'warning',
+      distinguishCancelAndClose: true,
+      closeOnHashChange: false
+    }).then(() => true).catch(() => false).finally(() => { confirming = undefined; });
+  }
   return confirming;
 }
 async function close() { if (await beforeLeave()) { discarded = true; clearDraft(owner); emit('close'); } }
 function closeDialog(done: () => void) { void beforeLeave().then(ok => { if (ok) { discarded = true; clearDraft(owner); done(); emit('close'); } }); }
-function unloading(event: BeforeUnloadEvent) { if (dirty.value || uploading.value || saving.value) { event.preventDefault(); event.returnValue = ''; } }
+function unloading(event: BeforeUnloadEvent) {
+  if (!discarded && (dirty.value || uploading.value || saving.value)) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+}
 onMounted(() => window.addEventListener('beforeunload', unloading));
 onUnmounted(() => { if (!discarded && dirty.value) keepDraft(owner, props.article, form); live = false; window.removeEventListener('beforeunload', unloading); });
 defineExpose({ beforeLeave, discard: () => { discarded = true; clearDraft(owner); } });
