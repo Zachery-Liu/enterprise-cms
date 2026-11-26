@@ -20,6 +20,13 @@ public class ArticleController {
     @GetMapping @RequirePermission("cms:article:read")
     public ApiResponse<PageResponse<ArticleListVO>> page(@Valid @ModelAttribute ArticlePageQuery query) { return ApiResponse.ok(queries.page(query)); }
 
+    @GetMapping("/filter-options/authors")
+    @RequirePermission(value="cms:article:read", alternatives="cms:article:audit")
+    public ApiResponse<PageResponse<AuthorOption>> authors(@RequestParam(defaultValue="") @Size(max=100) String keyword,
+            @RequestParam(defaultValue="1") @Min(1) int page, @RequestParam(defaultValue="20") @Min(1) @Max(100) int size) {
+        return ApiResponse.ok(queries.authors(keyword, page, size));
+    }
+
     @GetMapping("/{id}") @RequirePermission("cms:article:read")
     public ApiResponse<ArticleDetailVO> get(@PathVariable @Positive Long id) { return ApiResponse.ok(articles.detail(id)); }
 

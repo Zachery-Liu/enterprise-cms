@@ -69,6 +69,10 @@ async function verify(base) {
     const before = reads.filter(x=>x==='auth/logout').length;
     await cancelLeave(()=>p.getByRole('button',{name:'退出登录'}).dispatchEvent('click')); assert.equal(reads.filter(x=>x==='auth/logout').length,before); check('取消退出不发送退出请求');
     await p.locator('.el-dialog').getByRole('combobox').click(); await p.getByRole('option',{name:'产品动态',exact:true}).click();
+    await p.setViewportSize({width:390,height:844});
+    await p.waitForFunction(() => document.documentElement.scrollWidth <= innerWidth + 1);
+    await shot('editor-mobile');
+    await p.setViewportSize({width:1440,height:960});
     await p.getByRole('button',{name:'保存草稿',exact:true}).click(); await p.getByText(/版本冲突.*当前输入已保留/).waitFor(); assert.equal(await p.locator('[name=articleTitle]').inputValue(),'需要保留的草稿'); check('409 保存失败保留输入');
     expireNext=true; await p.getByRole('button',{name:'保存草稿',exact:true}).click(); await p.locator('.login-card').waitFor();
     assert.equal(await p.locator('[name=articleTitle]').isVisible(),false); await login();

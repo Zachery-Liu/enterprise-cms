@@ -44,7 +44,7 @@ def main():
     initialized.check_returncode()
     print("Initialized new, isolated MySQL 8.0 data directory", flush=True)
     env = os.environ.copy()
-    env.update(PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1")
+    env.update(PYTHONIOENCODING="utf-8", PYTHONDONTWRITEBYTECODE="1", CMS_MEDIA_DIRECTORY=str(base / "media"))
     password = secrets.token_urlsafe(32)
     schema = "cms_a_verify_20261030"
     env.update(CMS_MYSQL_TEST_SCHEMA=schema,
@@ -101,7 +101,7 @@ def main():
             print("Owned MySQL " + version + " ready on 127.0.0.1:" + str(port), flush=True)
             execute([sys.executable, "-u", "scripts/init_content_mysql.py", "--initialize"], "a-mysql80-initialization.log")
             maven = os.environ["CMS_MAVEN_EXECUTABLE"]
-            settings = str(root.parent / "test-settings.xml")
+            settings = os.environ.get("CMS_MAVEN_VERIFY_SETTINGS", str(root.parent / "test-settings.xml"))
             env["PATH"] = str(Path(env["JAVA_HOME"]) / "bin") + os.pathsep + env["PATH"]
             execute([maven, "-o", "-B", "-ntp", "-gs", settings, "-s", settings,
                      "-Dtest=MysqlContentVerificationIT", "test"], "a-mysql80-verification.log")
@@ -113,7 +113,7 @@ def main():
                            "durationSeconds": float(suite.attrib["time"]),
                            "testCases": [item.attrib["name"] for item in suite.findall("testcase")],
                            "sqlSha256": {name: hashlib.sha256((root / "sql" / name).read_bytes()).hexdigest() for name in
-                                         ["001_identity_schema.sql", "002_content_schema.sql", "003_identity_seed.sql", "004_registration_default_role.sql"]}}
+                                         ["001_identity_schema.sql", "002_content_schema.sql", "003_identity_seed.sql", "004_registration_default_role.sql", "006_article_media.sql"]}}
             (root / "docs/verification/MySQL80专项测试结果.json").write_text(json.dumps(test_result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             execute([sys.executable, "-u", "scripts/verify_content_tomcat.py"], "a-mysql80-external-tomcat.log")
             browser = root / "output/playwright/content-mysql80-results.json"

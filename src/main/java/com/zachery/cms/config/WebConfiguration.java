@@ -1,5 +1,6 @@
 package com.zachery.cms.config;
 
+import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zachery.cms.security.csrf.CsrfConfiguration;
@@ -24,6 +25,11 @@ import java.util.*;
 public class WebConfiguration implements WebMvcConfigurer {
     private final Validator validator;
     public WebConfiguration(Validator validator) { this.validator = validator; }
+    @Bean public StandardServletMultipartResolver multipartResolver() {
+        var resolver = new StandardServletMultipartResolver();
+        resolver.setResolveLazily(true);
+        return resolver;
+    }
     @Bean public ObjectMapper objectMapper() {
         return new ObjectMapper().registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)

@@ -80,7 +80,7 @@ class MysqlContentVerificationIT {
         assertThat(db.queryForObject("SELECT DATABASE()", String.class)).isEqualTo(schema);
         String prefix = Optional.ofNullable(System.getenv("CMS_MYSQL_TEST_VERSION_PREFIX")).orElse("8.0.");
         assertThat(db.queryForObject("SELECT VERSION()", String.class)).startsWith(prefix);
-        assertThat(db.queryForObject("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND ENGINE='InnoDB'", Integer.class)).isEqualTo(9);
+        assertThat(db.queryForObject("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND ENGINE='InnoDB'", Integer.class)).isEqualTo(10);
         assertThat(db.queryForObject("SELECT COUNT(*) FROM sys_user WHERE id BETWEEN 1 AND 4", Integer.class)).isEqualTo(4);
         System.out.println("Content verification: MySQL " + db.queryForObject("SELECT VERSION()", String.class) + ", schema=" + schema);
     }

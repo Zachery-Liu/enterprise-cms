@@ -8,7 +8,7 @@ import java.util.Arrays;
 import static org.assertj.core.api.Assertions.*;
 
 class ArticleContentSanitizerTest {
-    private final ArticleContentSanitizer sanitizer=new ArticleContentSanitizer();
+    private final ArticleContentSanitizer sanitizer=new ArticleContentSanitizer(new org.springframework.jdbc.core.JdbcTemplate());
     @Test void keepsBasicFormattingButRemovesActiveContentAndUnknownAttributes() {
         String safe=sanitizer.forStorage("<h2 style='color:red'>标题</h2><p onclick='bad()'>正文<strong>强调</strong>"
                 +"<script>alert(1)</script><iframe src='https://evil.test'></iframe><img src=x onerror=bad()>"
