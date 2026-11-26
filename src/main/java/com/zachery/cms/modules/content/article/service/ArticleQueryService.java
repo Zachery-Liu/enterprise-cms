@@ -1,5 +1,7 @@
 package com.zachery.cms.modules.content.article.service;
 
+import com.zachery.cms.common.exception.ErrorCode;
+import com.zachery.cms.modules.content.article.vo.AuthorOption;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zachery.cms.common.api.PageResponse;
 import com.zachery.cms.common.context.CurrentUserContext;
@@ -44,6 +46,18 @@ public class ArticleQueryService {
         }).toList();
         return new PageResponse<>(records,page.getTotal(),query.page(),query.size());
     }
+    @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
+    public PageResponse<AuthorOption> authors(String keyword, int page, int size) {
+        var permissions = identity.getRequiredUser().permissionCodes();
+        boolean reviewOnly = !permissions.contains("cms:article:read");
+        if (reviewOnly && !permissions.contains("cms:article:audit"))
+            throw new BusinessException(ErrorCode.AUTH_FORBIDDEN);
+        String pattern = keyword.isBlank() ? null : "%" + keyword.strip().replace("!", "!!")
+                .replace("%", "!%").replace("_", "!_") + "%";
+        var result = articles.selectAuthors(new Page<>(page, size), pattern, reviewOnly);
+        return new PageResponse<>(result.getRecords(), result.getTotal(), page, size);
+    }
+
     private void requireRange(OffsetDateTime from,OffsetDateTime to) {
         if(from!=null&&to!=null&&!from.toInstant().isBefore(to.toInstant()))
             throw new BusinessException(HttpStatus.BAD_REQUEST,"COMMON_VALIDATION_ERROR","时间范围起点必须早于终点");

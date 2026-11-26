@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@TestPropertySource(properties="cms.db.url=jdbc:h2:mem:a_http;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000")
+@TestPropertySource(properties={"cms.media.directory=${user.dir}/runtime/test-media","cms.db.url=jdbc:h2:mem:a_http;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;LOCK_TIMEOUT=10000"})
 @ContextHierarchy({
     @ContextConfiguration(name="root",classes={RootConfiguration.class,ContentTestConfiguration.class}),
     @ContextConfiguration(name="web",classes={WebConfiguration.class,MockMvcConfiguration.class})
@@ -38,7 +38,7 @@ class ContentHttpIntegrationTest extends SpringWebIntegrationTest {
 
     @BeforeEach void seed() {
         HistoryFailure.articleId=0;
-        for(String table:List.of("cms_article_status_history","cms_article")) db.update("DELETE FROM "+table);
+        for(String table:List.of("cms_media_image","cms_article_status_history","cms_article")) db.update("DELETE FROM "+table);
         db.update("UPDATE cms_category SET parent_id=NULL");db.update("DELETE FROM cms_category");
         for(String table:List.of("sys_operation_log","sys_user_role","sys_role_permission","sys_user","sys_role","sys_permission")) db.update("DELETE FROM "+table);
         editor=user("content-editor"); reviewer=user("content-reviewer"); publisher=user("content-publisher"); plain=user("content-plain");
@@ -59,7 +59,7 @@ class ContentHttpIntegrationTest extends SpringWebIntegrationTest {
                 writes++;assertThat(method.hasMethodAnnotation(OperationLog.class)).isTrue();assertThat(anonymous).isFalse();
             }
         }
-        assertThat(endpoints).isEqualTo(24);assertThat(writes).isEqualTo(16);
+        assertThat(endpoints).isEqualTo(26);assertThat(writes).isEqualTo(16);
     }
 
     @Test void categoryRoutesEnforceAuthenticationPermissionCsrfVersionsAndTrustedAudit() throws Exception {
@@ -101,6 +101,67 @@ class ContentHttpIntegrationTest extends SpringWebIntegrationTest {
         send(null,"GET","/api/public/articles/"+id,null,404);
         assertThat(send(e,"GET","/api/articles/"+id+"/history",null,200).at("/data/total").asLong()).isEqualTo(7);
         assertThat(db.queryForObject("SELECT COUNT(*) FROM sys_operation_log WHERE action='ARTICLE_APPROVE' AND result='SUCCESS'",Long.class)).isEqualTo(1);
+    }
+
+    @Test void authorOptionsRespectArticleVisibilityAndPublicCategoriesFollowPublication() throws Exception {
+        var e = actor(editor);
+        var r = actor(reviewer);
+        var p = actor(publisher);
+        long category = createCategory(e), id = createArticle(e, category);
+        String options = "/api/articles/filter-options/authors";
+        send(null, "GET", options, null, 401);
+        send(actor(plain), "GET", options, null, 403);
+        send(e, "GET", options + "?size=101", null, 400);
+        var author = send(e, "GET", options + "?keyword=editor", null, 200).at("/data/records/0");
+        assertThat(author.size()).isEqualTo(2);
+        assertThat(author.path("id").asLong()).isEqualTo(editor);
+        assertThat(author.path("displayName").asText()).isEqualTo("content-editor");
+        db.update("DELETE FROM sys_role_permission WHERE role_id=(SELECT id FROM sys_role WHERE code='REVIEWER') AND permission_id=(SELECT id FROM sys_permission WHERE code='cms:article:read')");
+        assertThat(send(r, "GET", options, null, 200).at("/data/total").asInt()).isZero();
+        assertThat(send(null, "GET", "/api/public/categories", null, 200).path("data")).isEmpty();
+        send(e, "POST", "/api/articles/"+id+"/submit", Map.of("version",0), 200);
+        assertThat(send(r, "GET", options, null, 200).at("/data/records/0/id").asLong()).isEqualTo(editor);
+        send(r, "POST", "/api/articles/"+id+"/approve", Map.of("version",1), 200);
+        send(p, "POST", "/api/articles/"+id+"/publish", Map.of("version",2), 200);
+        var visible = send(null, "GET", "/api/public/categories", null, 200).at("/data/0");
+        assertThat(visible.size()).isEqualTo(2);
+        assertThat(visible.path("id").asLong()).isEqualTo(category);
+        send(p, "POST", "/api/articles/"+id+"/offline", Map.of("version",3), 200);
+        assertThat(send(null, "GET", "/api/public/categories", null, 200).path("data")).isEmpty();
+    }
+
+    @Test void editorUploadsWebpAndPublishedArticleKeepsOnlyRegisteredImages() throws Exception {
+        byte[] bytes = Base64.getDecoder().decode("UklGRjoAAABXRUJQVlA4IC4AAACQAQCdASoCAAMAAUAmJaACdLoAA5gA/vtV4/+lwf/S4P/pcH/pcH8bss4bpAAA");
+        var file = new org.springframework.mock.web.MockMultipartFile("file", "blue.webp", "image/webp", bytes);
+        var e = actor(editor);
+        var p = actor(publisher);
+        String route = "/api/media/images";
+        mvc.perform(multipart(route).file(file).session(e.session())).andExpect(status().isForbidden());
+        mvc.perform(multipart(route).file(file).session(p.session()).header("X-CSRF-Token",p.token())).andExpect(status().isForbidden());
+        var result = mvc.perform(multipart(route).file(file).session(e.session()).header("X-CSRF-Token",e.token()))
+                .andExpect(status().isOk()).andReturn().getResponse();
+        var data = json.readTree(result.getContentAsByteArray()).path("data");
+        var url = data.path("url").asText();
+        try {
+            assertThat(data.path("width").asInt()).isEqualTo(2);
+            assertThat(data.path("height").asInt()).isEqualTo(3);
+            assertThat(data.path("size").asLong()).isEqualTo(bytes.length);
+            mvc.perform(get(url)).andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("image/webp"))
+                    .andExpect(header().string("X-Content-Type-Options","nosniff")).andExpect(content().bytes(bytes));
+            String html = "<h2>示例</h2><ul><li>列表</li></ul><pre><code>code</code></pre>"
+                    + "<img src='"+url+"' alt='蓝色' width='2' height='3'><img src='/media/images/"+UUID.randomUUID()+"'>";
+            long id = send(e,"POST","/api/articles",Map.of("title","含图文章","categoryId",createCategory(e),"content",html),200).at("/data/id").asLong();
+            send(e,"POST","/api/articles/"+id+"/submit",Map.of("version",0),200);
+            send(actor(reviewer),"POST","/api/articles/"+id+"/approve",Map.of("version",1),200);
+            send(p,"POST","/api/articles/"+id+"/publish",Map.of("version",2),200);
+            var body = org.jsoup.Jsoup.parseBodyFragment(send(null,"GET","/api/public/articles/"+id,null,200).at("/data/content").asText());
+            assertThat(body.select("img")).hasSize(1);
+            assertThat(body.select("img").attr("src")).isEqualTo(url);
+            assertThat(body.select("pre code").text()).isEqualTo("code");
+            assertThat(body.select("ul li").text()).isEqualTo("列表");
+        } finally {
+            java.nio.file.Files.deleteIfExists(java.nio.file.Path.of("runtime","test-media",data.path("id").asText()));
+        }
     }
 
     @Test void requestBindingValidatesPagesAndIgnoresClientIdentityAndStateFields() throws Exception {

@@ -1,5 +1,7 @@
 package com.zachery.cms.modules.content.article.mapper;
 
+import com.zachery.cms.modules.content.category.vo.PublicCategory;
+import com.zachery.cms.modules.content.article.vo.AuthorOption;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.zachery.cms.modules.content.article.entity.ArticleEntity;
 import org.apache.ibatis.annotations.Param;
@@ -18,6 +20,10 @@ public interface ArticleMapper extends BaseMapper<ArticleEntity> {
     IPage<ArticlePageRow> selectPublicPage(Page<ArticlePageRow> page,
             @Param("query") com.zachery.cms.modules.content.publication.PublicationPageQuery query);
     ArticleEntity selectPublished(@Param("id") Long id);
+    IPage<AuthorOption> selectAuthors(
+            Page<AuthorOption> page,
+            @Param("pattern") String pattern, @Param("reviewOnly") boolean reviewOnly);
+    java.util.List<PublicCategory> selectPublicCategories();
     IPage<ArticlePageRow> selectReviewPage(Page<ArticlePageRow> page,
             @Param("query") com.zachery.cms.modules.content.publication.ReviewQueueQuery query);
 }

@@ -65,6 +65,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception exception, Object body,
             HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (exception instanceof org.springframework.web.multipart.MaxUploadSizeExceededException)
+            return super.handleExceptionInternal(exception, ApiResponse.error("MEDIA_413", "图片不能超过 5 MiB", null),
+                    headers, HttpStatus.PAYLOAD_TOO_LARGE, request);
         if (status.is5xxServerError()) logType(exception);
         ErrorCode code = switch (status.value()) {
             case 400 -> ErrorCode.COMMON_VALIDATION_ERROR;

@@ -25,7 +25,10 @@ public class PermissionAspect {
             throw new BusinessException(ErrorCode.AUTH_UNAUTHENTICATED);
         }
         // ADMIN is a role, not a bypass; unknown/empty permission codes fail closed.
-        if (permission.value().isBlank() || !user.permissionCodes().contains(permission.value()))
+        boolean granted = java.util.stream.Stream.concat(java.util.stream.Stream.of(permission.value()),
+                java.util.Arrays.stream(permission.alternatives()))
+                .anyMatch(code -> !code.isBlank() && user.permissionCodes().contains(code));
+        if (!granted)
             throw new BusinessException(ErrorCode.AUTH_FORBIDDEN);
     }
 

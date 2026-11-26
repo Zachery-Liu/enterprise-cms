@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import { ElAlert, ElButton, ElCard, ElDatePicker, ElDescriptions, ElDescriptionsItem, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElPagination, ElResult, ElSelect, ElTable, ElTableColumn, ElTag, ElTreeSelect, type TableInstance } from 'element-plus';
+import { ElMessage, ElAlert, ElButton, ElCard, ElDatePicker, ElDescriptions, ElDescriptionsItem, ElDialog, ElForm, ElFormItem, ElInput, ElInputNumber, ElOption, ElPagination, ElResult, ElSelect, ElTable, ElTableColumn, ElTag, ElTreeSelect, type TableInstance } from 'element-plus';
 import { Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { can, currentUser, errorText, request, StaleResponse } from '../api';
-import { displayDate, states, tagType, type Article, type Category, type Detail, type History, type Page } from '../models';
+import { displayDate, states, tagType, type AuthorOption, type Article, type Category, type Detail, type History, type Page } from '../models';
 import ArticleEditor from './ArticleEditor.vue';
 import { readDraft } from '../content/editorDrafts';
 const editorRef = ref<InstanceType<typeof ArticleEditor>>();
@@ -22,6 +22,42 @@ const range = ref<[Date, Date] | null>(null), editor = ref(false), editing = ref
 const histories = ref<Page<History> | null>(null), historyId = ref<number | null>(null);
 const advanced = ref(!window.matchMedia('(max-width:760px)').matches);
 const categoryTree = ref<Category[]>();
+const authors = ref<AuthorOption[]>([]), authorsBusy = ref(false), authorsError = ref('');
+const authorPage = ref(0), authorTotal = ref(0), authorKeyword = ref('');
+let authorRevision = 0;
+async function searchAuthors(keyword: string, next = false) {
+  if (next && authorsBusy.value) return;
+  if (!next) {
+    authors.value = [];
+    authorPage.value = 0;
+    authorTotal.value = 0;
+    authorKeyword.value = keyword;
+  }
+  const pageNumber = authorPage.value + 1;
+  const revision = ++authorRevision;
+  authorsBusy.value = true;
+  authorsError.value = '';
+  try {
+    const result = await request<Page<AuthorOption>>('articles/filter-options/authors', { query: { keyword, page: pageNumber, size: 50 } });
+    if (live && revision === authorRevision) {
+      authors.value = next ? [...authors.value, ...result.records] : result.records;
+      authorPage.value = pageNumber;
+      authorTotal.value = result.total;
+    }
+  } catch (e) {
+    if (live && revision === authorRevision && !(e instanceof StaleResponse)) {
+      authorsError.value = errorText(e);
+    }
+  } finally { if (revision === authorRevision) authorsBusy.value = false; }
+}
+type FilterNode = { id: number; label: string; children: FilterNode[] };
+function filterNodes(nodes: Category[], parent = ''): FilterNode[] {
+  return nodes.map(node => {
+    const path = parent + node.name;
+    return { id: node.id, label: path + (node.status === 'DISABLED' ? '（停用）' : ''), children: filterNodes(node.children, path + ' / ') };
+  });
+}
+const categoryOptions = computed(() => filterNodes(categoryTree.value || []));
 async function loadCategories() {
   if (!can('cms:category:read')) return;
   try {
@@ -67,7 +103,7 @@ async function history(id: number, number = 1) {
   try { const result = await request<Page<History>>(`articles/${id}/history`, { query: { page: number, size: 20 } }); if (live) { histories.value = result; historyId.value = id; } }
   catch (e) { if (!(e instanceof StaleResponse)) error.value = errorText(e); }
 }
-function saved() { editor.value = false; editing.value = undefined; action.value = ''; void load(); }
+function saved() { if (action.value === 'batch') ElMessage.success('已发布 ' + targets.value.length + ' 篇文章'); editor.value = false; editing.value = undefined; action.value = ''; void load(); }
 onMounted(() => { if (permitted.value) { void load(); void loadCategories(); const draft = readDraft(currentUser.value?.userId); if (draft) { editing.value = draft.article; editor.value = true; } } });
 </script>
 <template>
@@ -86,13 +122,21 @@ onMounted(() => { if (permitted.value) { void load(); void loadCategories(); con
         <div class="admin-filter-grid">
           <el-form-item label="标题"><el-input v-model="query.title" name="filterTitle" placeholder="输入标题关键词" clearable :maxlength="200" /></el-form-item>
           <el-form-item :label="categoryTree ? '分类' : '分类 ID'">
-            <el-tree-select v-if="categoryTree" v-model="query.categoryId" :data="categoryTree" node-key="id" :props="{ label: 'name' }" check-strictly filterable clearable placeholder="全部分类" aria-label="分类筛选" />
+            <el-tree-select v-if="categoryTree" v-model="query.categoryId" :data="categoryOptions" node-key="id" :props="{ label: 'label' }" check-strictly filterable clearable placeholder="全部分类" aria-label="分类筛选" />
             <el-input-number v-else v-model="query.categoryId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" placeholder="全部分类" />
           </el-form-item>
           <el-form-item v-if="!review" label="状态"><el-select v-model="query.status" clearable placeholder="全部状态" aria-label="状态筛选"><el-option v-for="(label,value) in states" :key="value" :label="label" :value="value" /></el-select></el-form-item>
         </div>
         <div v-show="advanced" id="advanced-article-filters" class="admin-filter-grid admin-filter-extra">
-          <el-form-item label="作者 ID"><el-input-number v-model="query.authorId" :min="1" :max="Number.MAX_SAFE_INTEGER" :precision="0" :controls="false" placeholder="全部作者" /></el-form-item>
+          <el-form-item label="作者" :error="authorsError">
+            <el-select v-model="query.authorId" filterable remote clearable aria-label="搜索作者姓名" :remote-method="searchAuthors"
+              :loading="authorsBusy" @visible-change="open => open && searchAuthors('')" placeholder="搜索作者姓名">
+              <el-option v-for="author in authors" :key="author.id" :value="author.id" :label="author.displayName" />
+              <template v-if="authors.length < authorTotal" #footer>
+                <el-button link :loading="authorsBusy" @click="searchAuthors(authorKeyword, true)">加载更多作者</el-button>
+              </template>
+            </el-select>
+          </el-form-item>
           <el-form-item v-if="!review" label="排序">
             <div class="admin-sort-fields">
               <el-select v-model="query.sort" aria-label="排序字段"><el-option v-for="(label,value) in { updatedAt:'更新时间',createdAt:'创建时间',publishedAt:'发布时间',title:'标题' }" :key="value" :label="label" :value="value" /></el-select>
@@ -112,14 +156,15 @@ onMounted(() => { if (permitted.value) { void load(); void loadCategories(); con
       <div class="table-tools admin-table-toolbar">
         <div class="admin-table-heading"><h2>{{ review ? '待审核文章' : '文章列表' }}</h2><span>{{ busy ? '加载中…' : `共 ${page.total} 篇` }}</span></div>
         <div class="admin-table-actions">
+          <span v-if="allowed('publish') && page.records.some(item => item.status !== 'APPROVED')">仅已通过审核的文章可批量发布</span>
           <el-button v-if="allowed('publish')" :disabled="selection.length === 0" @click="choose('batch', selection)">批量发布（{{ selection.length }}/50）</el-button>
           <el-button :icon="Refresh" :loading="busy" @click="load">刷新</el-button>
         </div>
       </div>
-      <el-table ref="tableRef" :data="page.records" row-key="id" :empty-text="busy ? '正在加载文章…' : '没有符合条件的文章'" @selection-change="selected">
+      <el-table ref="tableRef" :data="page.records" row-key="id" :empty-text="busy ? '正在加载文章…' : error ? '文章列表加载失败' : query.title || query.categoryId || query.authorId || query.status || range ? '没有符合条件的文章' : review ? '暂无待审核文章' : '暂无文章'" @selection-change="selected">
         <el-table-column v-if="allowed('publish')" type="selection" width="48" :selectable="(row: Article) => row.status === 'APPROVED'" />
         <!-- @vue-generic {Article} -->
-        <el-table-column label="文章标题" min-width="200"><template #default="{row}"><el-button v-if="allowed('read')" link type="primary" class="article-title" @click="inspect(row)">{{ row.title }}</el-button><span v-else>{{ row.title }}</span></template></el-table-column>
+        <el-table-column label="文章标题" min-width="200" show-overflow-tooltip><template #default="{row}"><el-button v-if="allowed('read')" link type="primary" class="article-title" @click="inspect(row)">{{ row.title }}</el-button><span v-else>{{ row.title }}</span></template></el-table-column>
         <el-table-column prop="categoryName" label="分类" min-width="110" /><el-table-column prop="authorDisplayName" label="作者" min-width="110" />
         <el-table-column label="状态" width="105"><template #default="{row}"><el-tag :type="tagType(row.status)">{{ states[row.status as keyof typeof states] }}</el-tag></template></el-table-column>
         <el-table-column :label="review ? '提交时间' : '更新时间'" width="180"><template #default="{row}">{{ displayDate(review ? row.submittedAt : row.updatedAt) }}</template></el-table-column>

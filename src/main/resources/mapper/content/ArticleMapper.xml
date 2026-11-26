@@ -82,4 +82,21 @@
             updated_by=#{row.updatedBy}, updated_at=#{row.updatedAt}
         WHERE id=#{row.id} AND status=#{previous} AND version=#{row.version} AND deleted=0
     </update>
+    <select id="selectAuthors" resultType="com.zachery.cms.modules.content.article.vo.AuthorOption">
+        SELECT u.id,u.display_name FROM sys_user u
+        WHERE u.deleted=0 AND EXISTS (
+            SELECT 1 FROM cms_article a WHERE a.author_id=u.id AND a.deleted=0
+            <if test="reviewOnly">
+                AND a.status='PENDING' AND EXISTS (
+                    SELECT 1 FROM cms_article_status_history h WHERE h.article_id=a.id AND h.action='SUBMIT')
+            </if>
+        )
+        <if test="pattern != null">AND u.display_name LIKE #{pattern} ESCAPE '!'</if>
+        ORDER BY u.display_name,u.id
+    </select>
+    <select id="selectPublicCategories" resultType="com.zachery.cms.modules.content.category.vo.PublicCategory">
+        SELECT c.id,c.name FROM cms_category c WHERE c.deleted=0 AND EXISTS (
+            SELECT 1 FROM cms_article a WHERE a.category_id=c.id AND a.status='PUBLISHED' AND a.deleted=0)
+        ORDER BY c.sort_order,c.id
+    </select>
 </mapper>

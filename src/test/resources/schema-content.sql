@@ -46,3 +46,15 @@ CREATE TABLE cms_article_status_history (
     reason VARCHAR(500),
     created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE cms_media_image (
+    id CHAR(36) PRIMARY KEY,
+    storage_key CHAR(36) NOT NULL UNIQUE,
+    mime_type VARCHAR(32) NOT NULL,
+    width INT NOT NULL,
+    height INT NOT NULL,
+    byte_size BIGINT NOT NULL,
+    uploader_id BIGINT NOT NULL,
+    created_at DATETIME(3) NOT NULL,
+    FOREIGN KEY (uploader_id) REFERENCES sys_user(id)
+);

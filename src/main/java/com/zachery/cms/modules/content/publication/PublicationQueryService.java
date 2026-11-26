@@ -1,5 +1,6 @@
 package com.zachery.cms.modules.content.publication;
 
+import com.zachery.cms.modules.content.category.vo.PublicCategory;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zachery.cms.common.api.PageResponse;
 import com.zachery.cms.common.context.CurrentUserContext;
@@ -40,6 +41,9 @@ public class PublicationQueryService {
                 row.getCategoryId(),row.getCategoryName(),authors.containsKey(row.getAuthorId())?authors.get(row.getAuthorId()).displayName():"未知用户",
                 utc(row.getPublishedAt()))).toList();
         return new PageResponse<>(records,page.getTotal(),query.page(),query.size());
+    }
+    public List<PublicCategory> publicCategories() {
+        return articles.selectPublicCategories();
     }
     public PublicArticleDetailVO publicDetail(@NotNull @Positive Long id) {
         var row=articles.selectPublished(id);if(row==null) throw missing();

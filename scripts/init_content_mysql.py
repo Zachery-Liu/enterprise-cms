@@ -50,7 +50,7 @@ def main():
     if exists:
         raise RuntimeError("Refusing initialization: dedicated schema already exists; no existing schema is cleared")
     names = ["001_identity_schema.sql", "002_content_schema.sql", "003_identity_seed.sql",
-             "004_registration_default_role.sql"]
+             "004_registration_default_role.sql", "006_article_media.sql"]
     scripts = [(name, (root / "sql" / name).read_text(encoding="utf-8-sig")) for name in names]
     for _, sql in scripts:
         if re.search(r"(?im)^\s*(?:USE\s|(?:CREATE|DROP)\s+DATABASE\b)", sql):
@@ -62,13 +62,13 @@ def main():
         print("Applied " + name)
     repeated = query(scripts[0][1], schema, required=False)
     assert repeated.returncode != 0 and "1050" in repeated.stderr, "Fresh DDL must refuse an existing installation"
-    query(scripts[-1][1], schema)
+    query(dict(scripts)["004_registration_default_role.sql"], schema)
     counts = {}
     for table in ["sys_user", "sys_role", "sys_permission"]:
         counts[table] = int(query("SELECT COUNT(*) FROM " + table + ";", schema).stdout.strip())
     table_count = int(query("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE();", schema).stdout.strip())
     assert counts == {"sys_user": 4, "sys_role": 5, "sys_permission": 15}
-    assert table_count == 9
+    assert table_count == 10
     result = {"serverVersion": version, "schema": schema, "port": port, "targetMysql8Acceptance": False,
               "initializedScripts": names, "initialization": "passed", "initialTables": table_count,
               "seedCounts": counts, "freshInstallRepeatError": 1050, "defaultRoleRepeat": "passed"}

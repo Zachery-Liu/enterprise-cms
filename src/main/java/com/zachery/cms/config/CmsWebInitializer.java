@@ -13,6 +13,9 @@ public class CmsWebInitializer extends AbstractAnnotationConfigDispatcherServlet
     @Override protected Class<?>[] getRootConfigClasses() { return new Class<?>[]{RootConfiguration.class}; }
     @Override protected Class<?>[] getServletConfigClasses() { return new Class<?>[]{WebConfiguration.class}; }
     @Override protected String[] getServletMappings() { return new String[]{"/"}; }
+    @Override protected void customizeRegistration(ServletRegistration.Dynamic registration) {
+        registration.setMultipartConfig(new MultipartConfigElement("", 5L << 20, 6L << 20, 0));
+    }
     @Override public void onStartup(ServletContext context) throws ServletException {
         StandardServletEnvironment env = new StandardServletEnvironment();
         env.initPropertySources(context, null);
